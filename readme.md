@@ -60,3 +60,10 @@ I looked up creating a random time for a date [on StackOverflow](https://stackov
 
 I loaded that fixture with `php bin/console doctrine:fixtures:load` and verified in PHPMyAdmin that I had 20 vehicles with random license plates and timestamps from yesterday
 
+### The API
+
+I Googled creating a REST API in Symfony knowing I would need a controller and routes and found https://quickstarts.postman.com/guide/php-symfony-API/index.html?index=..%2F..index#3
+
+I smoke tested that by running the server and loading the URL in Postman
+
+I then dug into the documentation on Doctrine until I found [Querying with SQL](https://symfony.com/doc/current/doctrine.html#querying-with-sql)
