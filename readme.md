@@ -163,3 +163,7 @@ Commit at this point: e2ac708a385dfb1b535bea1dddf85f212fa3e965
 Now I need to test bigger windows and multiple objects
 
 First I made the date dynamic so the test would pass in the future. I used AI to help with the syntax because initially I was trying to set the datetime in the default value for the class property which was causing an error. 
+
+Commit at this point: 1e2d6ad319fec52dda3dd7385833752ed4619ef5
+
+What if we wanted to see all plates within a timeframe? Modify to make plate optional and return all results in that window.

@@ -133,4 +133,69 @@ class VehicleSearchTest extends ApiTestCase
             ]
         ]);
     }
+
+    /**
+     * Test the same car, yesterday, is excluded.
+     */
+    public function testSameCarOutsideOfTimeframeIsExcluded(): void
+    {
+        $yesterday = new \DateTimeImmutable('-1 day');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setLicensePlate(self::$PLATE);
+        $vehicle->setTimeIn($yesterday);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE]
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Test the same car, left and returned within the window is counted twice.
+     */
+    public function testSameCarTwiceWithinWindow(): void
+    {
+        $ten_minutes_ago = new \DateTimeImmutable('-10 minutes');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setLicensePlate(self::$PLATE);
+        $vehicle->setTimeIn($ten_minutes_ago);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE]
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '2 results found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN
+                ],
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s')
+                ]
+            ]
+        ]);
+    }
+
 }
