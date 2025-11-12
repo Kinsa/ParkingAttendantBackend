@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Vehicle;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -44,22 +45,28 @@ class VehicleRepository extends ServiceEntityRepository
     /**
     * @return [] Returns an array of Vehicle objects
     */
-    public function findByPlate(string $licensePlate): ?array
+    public function findByPlate(string $licensePlate, DateTimeImmutable $from, DateTimeImmutable $to): ?array
     {
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = '
             SELECT DISTINCT * FROM (
                 (SELECT * FROM vehicle v
-                WHERE v.license_plate SOUNDS LIKE :license_plate)
+                WHERE v.license_plate SOUNDS LIKE :license_plate
+                AND v.time_in BETWEEN :from AND :to)
                 UNION ALL
                 (SELECT * FROM vehicle v
-                WHERE v.license_plate LIKE CONCAT(:license_plate, "%"))
+                WHERE v.license_plate LIKE CONCAT(:license_plate, "%")
+                AND v.time_in BETWEEN :from AND :to)
             ) AS combined_results
             ORDER BY license_plate ASC
             ';
 
-        $resultSet = $conn->executeQuery($sql, ['license_plate' => $licensePlate]);
+        $resultSet = $conn->executeQuery($sql, [
+            'license_plate' => $licensePlate,
+            'from' => $from->format('Y-m-d H:i:s'),
+            'to' => $to->format('Y-m-d H:i:s')
+        ]);
 
         // returns an array of arrays (i.e. a raw data set)
         return $resultSet->fetchAllAssociative();

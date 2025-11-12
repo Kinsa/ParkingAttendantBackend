@@ -131,6 +131,8 @@ Now we are actually programming and not just figuring out config. Modified the S
 
 This taught me a bit about the SOUNDEX algorithm. My testNoMatchesFound test continued to fail even though it had an exact match for the first set of characters.
 
+Commit at this point: 7b0010468f597f4e2e3f9405bae9ef18d08a0854
+
 Wanting to address this... a partial match should return... I googled combining queries (and refreshed on UNION ALL) and then asked AI to help rewrite the query after manually trying it. 
 
 My SQL was:
@@ -147,3 +149,9 @@ ORDER BY license_plate ASC
 I asked "i want to combine a soundex search with sounds like and a partial search with like into a single set of results. this code causes an error. is it syntax or concept" and it said "The issue is syntax. When using UNION, you can't reference column aliases from the subqueries in the outer ORDER BY. You need to order within each subquery or use a different approach."
 
 This led to my exact match test failing. After reviewing the output, I saw that the combined results included the plate twice. I needed to add DISTINCT to make it unique.
+
+Commit at this point: 0455d40f796ddc9d28728b55645d478cf013db43
+
+With the plate query working as expected, I set to work on adding in the date.
+
+I used AI to sort out some syntax issues. Doctrine needed the DateTimeImmutable objects to be passed as strings which caused me some confusion since the objects in the database are DateTimeImmutable objects.

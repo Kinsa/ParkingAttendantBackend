@@ -9,7 +9,7 @@ class VehicleSearchTest extends ApiTestCase
 {
     private static $PLATE = 'AA 1234AB';
     private static $SIMILAR_PLATE = 'AA I2BAAB';
-    private static $TIME_IN = '2025-11-10 02:36:00';
+    private static $TIME_IN = '2025-11-12 09:36:00';
 
     protected static ?bool $alwaysBootKernel = true;
 

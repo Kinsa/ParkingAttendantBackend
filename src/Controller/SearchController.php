@@ -17,17 +17,25 @@ class SearchController extends AbstractController
     #[Route('/search', name: 'search')]
     public function search(
         #[MapQueryParameter] string $plate = '',
-        #[MapQueryParameter] DateTime $date_start = null,
-        #[MapQueryParameter] DateTime $date_end = null,
+        #[MapQueryParameter] ?DateTime $date_start = null,
+        #[MapQueryParameter] ?DateTime $date_end = null,
     ): JsonResponse
     {
+        // Set default values for date parameters if not provided
+        if ($date_start === null) {
+            $date_start = new \DateTimeImmutable('-2 hours');
+        }
+        if ($date_end === null) {
+            $date_end = new \DateTimeImmutable('now');
+        }
+
         // create a new Response object
         $response = new JsonResponse();
 
         $vehicleRepository = $this->doctrine;
 
         if (isset($plate) && !empty($plate)) {
-            $matches = $vehicleRepository->findByPlate($plate);
+            $matches = $vehicleRepository->findByPlate($plate, $date_start, $date_end);
             if (!$matches || empty($matches)) {
                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
                 $response->setData(['message'=>'No results found.', 'results'=>[]]);
