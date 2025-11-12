@@ -87,9 +87,9 @@ class SearchController extends AbstractController
         if (!empty($vrm)) {
             $matches = $vehicleRepository->findByVrm($vrm, null, null);
             if (empty($matches)) {
-                $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                $response->setStatusCode(Response::HTTP_OK);
                 $response->setData([
-                    'message' => 'No results found.',
+                    'message' => 'No matches for VRN found.',
                     'results' => [
                         [
                             'vrm' => $vrm,

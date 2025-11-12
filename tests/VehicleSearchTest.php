@@ -65,8 +65,8 @@ class VehicleSearchTest extends ApiTestCase
             'query' => ['vrm' => self::$PLATE.'XYZ'],
         ]);
 
-        $this->assertResponseStatusCodeSame(404);
-        $this->assertJsonContains(['message' => 'No results found.']);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => 'No matches for VRN found.']);
         $this->assertJsonContains([
             'results' => [
                 [
