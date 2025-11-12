@@ -8,6 +8,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 class VehicleSearchTest extends ApiTestCase
 {
     private static $PLATE = 'AA 1234AB';
+    private static $TIME_IN = '2025-11-10 02:36:00';
 
     protected static ?bool $alwaysBootKernel = true;
 
@@ -21,7 +22,7 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
         $vehicle->setLicensePlate(self::$PLATE);
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', '2024-01-15 14:30:00');
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', self::$TIME_IN);
         $vehicle->setTimeIn($date);
 
         $entityManager->persist($vehicle);
@@ -66,6 +67,13 @@ class VehicleSearchTest extends ApiTestCase
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
-        // $this->assertJsonContains(['results' => []]);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN
+                ]
+            ]
+        ]);
     }
 }

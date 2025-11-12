@@ -122,3 +122,7 @@ Continuing to debug, I found some syntax errors. I finally asked AI for help:
 "does this tear down method run after my test? i'm getting no results found with it in place" and "i have set up and tear down methods. the setup method runs before each test. how can i have it run once before the test suite? how can i run teh tear down method after the test suite."
 
 It then made some changes.
+
+With a bit of fine tuning of the message I have passing tests.
+
+I then worked out the syntax for asserting the response I was expecting. I had to dig into assertJsonContains to figure out the syntax and then from PHPUnit I was expecting to have to have an exact match. Since the ID changes I was getting a failure. I asked AI "this fails because the id changes. can i set a wildcard or just test for license_plate and time_in maybe as 2 separate tests?" and it told me to just remove the `id` parameter.
