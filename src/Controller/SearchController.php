@@ -26,11 +26,11 @@ class SearchController extends AbstractController
         return $dateTime && $dateTime->format($format) === $datetime;
     }
 
-    private function returnInvalidDateResponse(): JsonResponse
+    private function returnInvalidDateResponse(string $queryParameter): JsonResponse
     {
         $response = new JsonResponse();
         $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-        $response->setData(['message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.']);
+        $response->setData(['message' => "Invalid $queryParameter format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates."]);
 
         return $response;
     }
@@ -50,18 +50,20 @@ class SearchController extends AbstractController
         #[MapQueryParameter] string $vrm = '',
         #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] string $window = '120',
+        #[MapQueryParameter] string $query_from = '',
+        #[MapQueryParameter] string $query_to = '',
     ): JsonResponse {
         if (empty($datetime)) {
             // Set default values for date parameters if not provided
-            $calculateExpiredParkingFrom = new \DateTimeImmutable('now');
+            $calculateParkingSessionsFrom = new \DateTimeImmutable('now');
         } else {
             if (!self::isValidDateTime($datetime)) {
-                return self::returnInvalidDateResponse();
+                return self::returnInvalidDateResponse('datetime');
             } else {
                 try {
-                    $calculateExpiredParkingFrom = new \DateTimeImmutable($datetime);
+                    $calculateParkingSessionsFrom = new \DateTimeImmutable($datetime);
                 } catch (\Exception $e) {
-                    return self::returnInvalidDateResponse();
+                    return self::returnInvalidDateResponse('datetime');
                 }
             }
         }
@@ -73,7 +75,7 @@ class SearchController extends AbstractController
         } else {
             try {
                 $parkingWindow = new \DateInterval('PT'.$window.'M');
-                $latestSafeParkedTime = $calculateExpiredParkingFrom->sub($parkingWindow);
+                $latestSafeParkedTime = $calculateParkingSessionsFrom->sub($parkingWindow);
             } catch (\Exception $e) {
                 return self::returnInvalidWindowResponse();
             }
