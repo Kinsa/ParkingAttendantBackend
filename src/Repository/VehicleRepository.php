@@ -49,9 +49,14 @@ class VehicleRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = '
-            SELECT * FROM vehicle v
-            WHERE v.license_plate = :license_plate
-            ORDER BY v.license_plate ASC
+            SELECT DISTINCT * FROM (
+                (SELECT * FROM vehicle v
+                WHERE v.license_plate SOUNDS LIKE :license_plate)
+                UNION ALL
+                (SELECT * FROM vehicle v
+                WHERE v.license_plate LIKE CONCAT(:license_plate, "%"))
+            ) AS combined_results
+            ORDER BY license_plate ASC
             ';
 
         $resultSet = $conn->executeQuery($sql, ['license_plate' => $licensePlate]);

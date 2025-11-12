@@ -8,6 +8,7 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 class VehicleSearchTest extends ApiTestCase
 {
     private static $PLATE = 'AA 1234AB';
+    private static $SIMILAR_PLATE = 'AA I2BAAB';
     private static $TIME_IN = '2025-11-10 02:36:00';
 
     protected static ?bool $alwaysBootKernel = true;
@@ -40,6 +41,9 @@ class VehicleSearchTest extends ApiTestCase
         $conn->executeQuery($sql);
     }
 
+    /**
+     * Test that a request without the plate parameter returns a bad request response.
+     */
     public function testNoPlateProvided(): void
     {
         static::createClient()->request('GET', '/search');
@@ -49,6 +53,10 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains(['results' => []]);
     }
 
+    /**
+     * Test that a license plate search for a plate not in the database 
+     * returns a not found response.
+     */
     public function testNoMatchesFound(): void
     {
         static::createClient()->request('GET', '/search', [
@@ -60,10 +68,56 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains(['results' => []]);
     }
 
+    /**
+     * Test that a license plate search returns matching results.
+     *
+     * Searches for an exact match of a plate and expects to find
+     * the full matching vehicle record.
+     */
     public function testMatchFound(): void
     {
         static::createClient()->request('GET', '/search', [
             'query' => ['plate' => self::$PLATE]
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Test that a similar license plate search returns matching results.
+     */
+    public function testSimilarMatchFound(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$SIMILAR_PLATE]
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Test that a partial license plate search returns matching results.
+     */
+    public function testPartialSimilarMatchFound(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => substr(self::$PLATE, 0, 8)]
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);

@@ -89,7 +89,7 @@ I ran `symfony console make:test` to create a test and chose API Test from the m
 
 I then tried to run them and realised I needed to install the Test package: `composer require --dev symfony/test-pack` per https://symfony.com/doc/current/testing.html
 
-And I needed to modify my docker config. The error I was getting indicated that my user didn't have privlidges for the test database. I knew I needed to GRANT ALL on * but wasn't sure how to do that with docker so I provided the docker-compose file to Claude and asked it how I would modify it so that my user had access to all databases. It then showed me how to create a SQL file to be run when bringing up the container to run the GRANT command
+And I needed to modify my docker config. The error I was getting indicated that my user didn't have privileges for the test database. I knew I needed to GRANT ALL on * but wasn't sure how to do that with docker so I provided the docker-compose file to Claude and asked it how I would modify it so that my user had access to all databases. It then showed me how to create a SQL file to be run when bringing up the container to run the GRANT command
 
 I then had to remigrate and re load the fixture:
 
@@ -101,7 +101,7 @@ php bin/console doctrine:fixtures:load
 
 I then was able to create the database and tables with the commands from https://symfony.com/doc/current/testing.html and re-run `./bin/phpunit`
 
-My test wasn't running though. I realized the package for ApiTest wasn't installed even though I had installed the testing package. After Googling a bit, I asked Claude where it came from and it pointed me to `composer require api-platform/api-pack` which lined up to what I had been seeing about assertJsonContains() in the google search results. I installed that and got tests to run
+My test wasn't running though. I realised the package for ApiTest wasn't installed even though I had installed the testing package. After Googling a bit, I asked Claude where it came from and it pointed me to `composer require api-platform/api-pack` which lined up to what I had been seeing about assertJsonContains() in the google search results. I installed that and got tests to run
 
 I had to ask Claude how to fix the deprecation error. It added `protected static ?bool $alwaysBootKernel = true;`
 
@@ -115,7 +115,7 @@ Created a factory: `bin/console make:factory 'App\Entity\Vehicle'` which  create
 
 Realised at this point I was getting ahead of myself, while I will need a factory eventually, what I need right now is a single entry. Went back and added a setUp method to the test to do so. I went back to the entity docs to review creating an object in the ORM: https://symfony.com/doc/current/doctrine.html#persisting-objects-to-the-database and I refreshed via AI how to create a datetime from a string in PHP. GitHub autopilot autocomplete filled in `$entityManager = self::getContainer()->get('doctrine')->getManager();` as I was trying to work out how to initiate the correct object.
 
-I could see in the database that the test vehcile was getting added but not getting removed so I added a tear down method as well to clean the database.
+I could see in the database that the test vehicle was getting added but not getting removed so I added a tear down method as well to clean the database.
 
 Continuing to debug, I found some syntax errors. I finally asked AI for help:
 
@@ -126,3 +126,24 @@ It then made some changes.
 With a bit of fine tuning of the message I have passing tests.
 
 I then worked out the syntax for asserting the response I was expecting. I had to dig into assertJsonContains to figure out the syntax and then from PHPUnit I was expecting to have to have an exact match. Since the ID changes I was getting a failure. I asked AI "this fails because the id changes. can i set a wildcard or just test for license_plate and time_in maybe as 2 separate tests?" and it told me to just remove the `id` parameter. And we once again have passing tests.
+
+Now we are actually programming and not just figuring out config. Modified the SQL query to use soundex which I had researched as the best method given the problem of cameras sometimes changing characters in plates when recording (a bit of dirt on a 4 makes an A, an I and a 1 or O and 0 are too similar). Updated tests and verified this worked as expected. 
+
+This taught me a bit about the SOUNDEX algorithm. My testNoMatchesFound test continued to fail even though it had an exact match for the first set of characters.
+
+Wanting to address this... a partial match should return... I googled combining queries (and refreshed on UNION ALL) and then asked AI to help rewrite the query after manually trying it. 
+
+My SQL was:
+
+```
+(SELECT * FROM vehicle v
+WHERE v.license_plate SOUNDS LIKE :license_plate)
+UNION ALL
+(SELECT * FROM vehicle v
+WHERE v.license_plate LIKE CONCAT(:license_plate, "%"))
+ORDER BY license_plate ASC
+```
+
+I asked "i want to combine a soundex search with sounds like and a partial search with like into a single set of results. this code causes an error. is it syntax or concept" and it said "The issue is syntax. When using UNION, you can't reference column aliases from the subqueries in the outer ORDER BY. You need to order within each subquery or use a different approach."
+
+This led to my exact match test failing. After reviewing the output, I saw that the combined results included the plate twice. I needed to add DISTINCT to make it unique.
