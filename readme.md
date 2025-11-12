@@ -155,3 +155,11 @@ Commit at this point: 0455d40f796ddc9d28728b55645d478cf013db43
 With the plate query working as expected, I set to work on adding in the date.
 
 I used AI to sort out some syntax issues. Doctrine needed the DateTimeImmutable objects to be passed as strings which caused me some confusion since the objects in the database are DateTimeImmutable objects.
+
+I opted to set a default window of 2 hours if none is provided to the query.
+
+Commit at this point: e2ac708a385dfb1b535bea1dddf85f212fa3e965
+
+Now I need to test bigger windows and multiple objects
+
+First I made the date dynamic so the test would pass in the future. I used AI to help with the syntax because initially I was trying to set the datetime in the default value for the class property which was causing an error. 

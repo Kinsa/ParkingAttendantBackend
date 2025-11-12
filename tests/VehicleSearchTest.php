@@ -9,7 +9,7 @@ class VehicleSearchTest extends ApiTestCase
 {
     private static $PLATE = 'AA 1234AB';
     private static $SIMILAR_PLATE = 'AA I2BAAB';
-    private static $TIME_IN = '2025-11-12 09:36:00';
+    private static $TIME_IN;
 
     protected static ?bool $alwaysBootKernel = true;
 
@@ -17,13 +17,16 @@ class VehicleSearchTest extends ApiTestCase
     {
         parent::setUpBeforeClass();
 
+        // Initialize TIME_IN with current time minus 1 hour
+        $date = new \DateTimeImmutable('-1 hour');
+        self::$TIME_IN = $date->format('Y-m-d H:i:s');
+
         // Boot kernel to get container
         self::bootKernel();
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
         $vehicle->setLicensePlate(self::$PLATE);
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', self::$TIME_IN);
         $vehicle->setTimeIn($date);
 
         $entityManager->persist($vehicle);
