@@ -38,11 +38,49 @@ docker-compose stop
 
 ## Symfony
 
+### Create the databases
+
+```bash
+#sh
+php bin/console doctrine:database:create
+php bin/console --env=test doctrine:database:create
+```
+
+### Setup columns in the databases
+
+```bash
+# sh
+php bin/console doctrine:schema:create
+php bin/console --env=test doctrine:schema:create
+```
+
+### Migrate the databases
+
+```bash
+#sh
+php bin/console doctrine:migrations:migrate
+php bin/console --env=test doctrine:migrations:migrate
+```
+
+### Load fixtures (non-test database only)
+
+```bash
+#sh
+php bin/console doctrine:fixtures:load
+```
+
 ### Run server
 
 ```bash
 # sh
 symfony server:start
+```
+
+### Run tests
+
+```bash
+# sh
+php bin/phpunit
 ```
 
 ## Steps taken
@@ -190,3 +228,13 @@ With that little bit of refactoring, all the tests still pass because I haven't 
 
 Commit at this point: b27f1a0b69b056c14fcfb1546a5ffa37c15421ad
 
+### At this point I received the brief
+
+Up until now I was working on what I knew from the call.
+
+Quickly outlining next steps:
+
+- [ ] Test the custom window parameters
+- [ ] Rename 'plate' to 'VRM'
+- [ ] Reinstate optional date parameters to limit the queried response to a specific  period
+- [ ] Refactor 'expired' to indicate 'partial session', 'full session', or 'no session' (with 'expired' equaling 'full session' and 'no session' being the no math return)
