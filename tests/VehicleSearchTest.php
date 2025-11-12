@@ -60,7 +60,7 @@ class VehicleSearchTest extends ApiTestCase
      * Test that a license plate search for a plate not in the database 
      * returns a not found response.
      */
-    public function testNoMatchesFound(): void
+    public function testNoResultsFound(): void
     {
         static::createClient()->request('GET', '/search', [
             'query' => ['plate' => self::$PLATE . 'XYZ']
@@ -68,7 +68,16 @@ class VehicleSearchTest extends ApiTestCase
 
         $this->assertResponseStatusCodeSame(404);
         $this->assertJsonContains(['message' => 'No results found.']);
-        $this->assertJsonContains(['results' => []]);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE . 'XYZ',
+                    'time_in' => null,
+                    'expired' => true,
+                    'expiration_time' => null,
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -88,7 +97,9 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => self::$TIME_IN
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ]
             ]
         ]);
@@ -108,7 +119,9 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => self::$TIME_IN
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ]
             ]
         ]);
@@ -128,14 +141,16 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => self::$TIME_IN
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ]
             ]
         ]);
     }
 
     /**
-     * Test the same car, yesterday, is excluded.
+     * Test the same car, yesterday, is returned expired then but not for today.
      */
     public function testSameCarOutsideOfTimeframeIsExcluded(): void
     {
@@ -153,12 +168,18 @@ class VehicleSearchTest extends ApiTestCase
             'query' => ['plate' => self::$PLATE]
         ]);
         $this->assertResponseStatusCodeSame(200);
-        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains(['message' => '2 results found.']);
         $this->assertJsonContains([
             'results' => [
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => self::$TIME_IN
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                ],
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
+                    'expired' => true,
                 ]
             ]
         ]);
@@ -166,6 +187,7 @@ class VehicleSearchTest extends ApiTestCase
 
     /**
      * Test the same car, left and returned within the window is counted twice.
+     * Remember, the car from the previous test still exists in the database.
      */
     public function testSameCarTwiceWithinWindow(): void
     {
@@ -183,19 +205,26 @@ class VehicleSearchTest extends ApiTestCase
             'query' => ['plate' => self::$PLATE]
         ]);
         $this->assertResponseStatusCodeSame(200);
-        $this->assertJsonContains(['message' => '2 results found.']);
+        $this->assertJsonContains(['message' => '3 results found.']);
         $this->assertJsonContains([
             'results' => [
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => self::$TIME_IN
+                    'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
+                    'expired' => false,
                 ],
                 [
                     'license_plate' => self::$PLATE,
-                    'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s')
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                ],
+                [
+                    'license_plate' => self::$PLATE,
+                    'expired' => true,
                 ]
             ]
         ]);
     }
 
+    // TODO: test a custom window 
 }

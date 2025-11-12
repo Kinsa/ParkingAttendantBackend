@@ -22,12 +22,16 @@ class SearchController extends AbstractController
     ): JsonResponse
     {
         // Set default values for date parameters if not provided
-        if ($date_start === null) {
-            $date_start = new \DateTimeImmutable('-2 hours');
-        }
         if ($date_end === null) {
             $date_end = new \DateTimeImmutable('now');
         }
+
+        if ($date_start === null) {
+            $date_start = $date_start = $date_end->modify('-2 hours');
+        }
+
+        // Calculate parking duration window
+        $parking_window = $date_start->diff($date_end); // This sets a default 2-hour interval
 
         // create a new Response object
         $response = new JsonResponse();
@@ -35,14 +39,36 @@ class SearchController extends AbstractController
         $vehicleRepository = $this->doctrine;
 
         if (isset($plate) && !empty($plate)) {
-            $matches = $vehicleRepository->findByPlate($plate, $date_start, $date_end);
+            $matches = $vehicleRepository->findByPlate($plate);
             if (!$matches || empty($matches)) {
                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                $response->setData(['message'=>'No results found.', 'results'=>[]]);
+                $response->setData(['message'=>'No results found.', 'results'=>[[
+                    'license_plate' => $plate,
+                    'time_in' => null,
+                    'expired' => true,
+                    'expiration_time' => null,
+                ]]]);
             } else {
                 $response->setStatusCode(Response::HTTP_OK);
-                $message = count($matches) === 1 ? 'result' : 'results';
-                $response->setData(['message' => count($matches) . " $message found.", 'results' => $matches]);
+                $message = count($matches) . " ";
+                $message .= count($matches) === 1 ? 'result' : 'results';
+                $message .= " found.";
+                for ($i = 0; $i < count($matches); $i++) {
+                    $time_in = new \DateTimeImmutable($matches[$i]['time_in']);
+                    $time_in_str = $time_in->format('Y-m-d H:i:s');
+                    $expired_at = $time_in->add($parking_window); // Adds parking window to time_in
+
+                    // Parking is expired if the expiration time is before the search window end
+                    $is_expired = $expired_at < $date_start;
+
+                    $matches[$i] = [
+                        'license_plate' => $matches[$i]['license_plate'],
+                        'time_in' => $time_in_str,
+                        'expired' => $is_expired,
+                        'expiration_time' => $expired_at->format('Y-m-d H:i:s'),
+                    ];
+                }
+                $response->setData(['message' => $message, 'results' => $matches]);
             }
         } else {
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);

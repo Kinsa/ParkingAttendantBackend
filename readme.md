@@ -166,4 +166,16 @@ First I made the date dynamic so the test would pass in the future. I used AI to
 
 Commit at this point: 1e2d6ad319fec52dda3dd7385833752ed4619ef5
 
-What if we wanted to see all plates within a timeframe? Modify to make plate optional and return all results in that window.
+At this point the API is returning data where we could say "that car is safe" which is sort of the opposite of what we want. What we really want to do is to enter a plate and see a safe or not safe response.
+
+Modified the query to remove the date parameters and moved the validation logic into the controller
+
+Modified the query to return plates in reverse chronological order
+
+Updated the API response to indicate expired as a boolean and expiration_time as a nullable (to handle non-entries) datetime
+
+I had to lookup how to work out the timedelta to figure out the expiration date. I asked AI "how do i find the difference between $date_end and $date_start and the unit so i can apply that to the modify() method of a different date time"
+
+Tests are once again passing; it seems to work with the default values. Next up is to test it with a custom window for example "What cars were in the lot that needed to be ticketed yesterday at 12:10pm
+
+It seems that the API in being refactored could be simplified though. Date start and date end are now quite confusing. It would make more sense to pass a window in minutes and a date to calculate from

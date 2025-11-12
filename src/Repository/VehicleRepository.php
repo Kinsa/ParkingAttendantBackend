@@ -45,27 +45,23 @@ class VehicleRepository extends ServiceEntityRepository
     /**
     * @return [] Returns an array of Vehicle objects
     */
-    public function findByPlate(string $licensePlate, DateTimeImmutable $from, DateTimeImmutable $to): ?array
+    public function findByPlate(string $licensePlate): ?array
     {
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = '
             SELECT DISTINCT * FROM (
                 (SELECT * FROM vehicle v
-                WHERE v.license_plate SOUNDS LIKE :license_plate
-                AND v.time_in BETWEEN :from AND :to)
+                WHERE v.license_plate SOUNDS LIKE :license_plate)
                 UNION ALL
                 (SELECT * FROM vehicle v
-                WHERE v.license_plate LIKE CONCAT(:license_plate, "%")
-                AND v.time_in BETWEEN :from AND :to)
+                WHERE v.license_plate LIKE CONCAT(:license_plate, "%"))
             ) AS combined_results
-            ORDER BY license_plate ASC
+            ORDER BY time_in DESC
             ';
 
         $resultSet = $conn->executeQuery($sql, [
             'license_plate' => $licensePlate,
-            'from' => $from->format('Y-m-d H:i:s'),
-            'to' => $to->format('Y-m-d H:i:s')
         ]);
 
         // returns an array of arrays (i.e. a raw data set)
