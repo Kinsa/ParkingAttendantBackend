@@ -244,5 +244,6 @@ Quickly outlining next steps:
 
 - [x] Test the custom window parameters
 - [x] Rename 'plate' to 'VRM'
-- [ ] Reinstate optional date parameters to limit the queried response to a specific  period
-- [ ] Refactor 'expired' to indicate 'partial session', 'full session', or 'no session' (with 'expired' equaling 'full session' and 'no session' being the no math return)
+- [ ] Reinstate optional date parameters to limit the queried response to a specific period
+- [x] Refactor 'expired' to indicate 'partial session', 'full session', or 'no session' (with 'expired' equaling 'full session' and 'no session' being the no math return)
+- [ ] Revisit timezones - datetime query parameter should probably account for this and we need to handle it

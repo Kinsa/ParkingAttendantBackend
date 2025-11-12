@@ -72,8 +72,8 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE.'XYZ',
                     'time_in' => null,
-                    'expired' => true,
-                    'expiration_time' => null,
+                    'session' => 'none',
+                    'session_end' => null,
                 ],
             ],
         ]);
@@ -97,8 +97,8 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
-                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
@@ -119,8 +119,8 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
-                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
@@ -141,8 +141,8 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
-                    'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
@@ -173,12 +173,12 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => $yesterday->format('Y-m-d H:i:s'),
-                    'expired' => true,
+                    'session' => 'full',
                 ],
             ],
         ]);
@@ -245,12 +245,12 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => $yesterday->format('Y-m-d H:i:s'),
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
             ],
         ]);
@@ -282,16 +282,16 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
-                    'expired' => true,
+                    'session' => 'full',
                 ],
             ],
         ]);
@@ -314,16 +314,16 @@ class VehicleSearchTest extends ApiTestCase
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$PLATE,
-                    'expired' => false,
+                    'session' => 'partial',
                 ],
             ],
         ]);

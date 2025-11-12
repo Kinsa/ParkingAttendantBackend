@@ -49,6 +49,7 @@ class SearchController extends AbstractController
         #[MapQueryParameter] string $plate = '',
         #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] string $window = '120',
+
     ): JsonResponse {
         if (empty($datetime)) {
             // Set default values for date parameters if not provided
@@ -93,8 +94,8 @@ class SearchController extends AbstractController
                         [
                             'vrm' => $plate,
                             'time_in' => null,
-                            'expired' => true,
-                            'expiration_time' => null,
+                            'session' => 'none',
+                            'session_end' => null,
                         ],
                     ],
                 ]);
@@ -106,16 +107,16 @@ class SearchController extends AbstractController
                 for ($i = 0; $i < count($matches); ++$i) {
                     $time_in = new \DateTimeImmutable($matches[$i]['time_in']);
                     $time_in_str = $time_in->format('Y-m-d H:i:s');
-                    $expired_at = $time_in->add($parkingWindow); // Adds parking window to time_in
+                    $session_end = $time_in->add($parkingWindow); // Adds parking window to time_in
 
                     // Parking is expired if the expiration time is before the search window end
-                    $is_expired = $expired_at < $latestSafeParkedTime;
+                    $is_expired = $session_end < $latestSafeParkedTime;
 
                     $matches[$i] = [
                         'vrm' => $matches[$i]['vrm'],
                         'time_in' => $time_in_str,
-                        'expired' => $is_expired,
-                        'expiration_time' => $expired_at->format('Y-m-d H:i:s'),
+                        'session' => $is_expired ? 'full' : 'partial',
+                        'session_end' => $session_end->format('Y-m-d H:i:s'),
                     ];
                 }
                 $response->setData(['message' => $message, 'results' => $matches]);
