@@ -83,6 +83,14 @@ symfony server:start
 php bin/phpunit
 ```
 
+### Make and Run Migrations
+
+```bash
+#sh
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+```
+
 ## Steps taken
 
 The Symfony project was initially configured to build the minimal framework via `symfony new my_project_directory --version="7.3.x"`.
@@ -234,7 +242,7 @@ Up until now I was working on what I knew from the call.
 
 Quickly outlining next steps:
 
-- [ ] Test the custom window parameters
+- [x] Test the custom window parameters
 - [ ] Rename 'plate' to 'VRM'
 - [ ] Reinstate optional date parameters to limit the queried response to a specific  period
 - [ ] Refactor 'expired' to indicate 'partial session', 'full session', or 'no session' (with 'expired' equaling 'full session' and 'no session' being the no math return)

@@ -26,7 +26,7 @@ class VehicleSearchTest extends ApiTestCase
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
-        $vehicle->setLicensePlate(self::$PLATE);
+        $vehicle->setVrm(self::$PLATE);
         $vehicle->setTimeIn($date);
 
         $entityManager->persist($vehicle);
@@ -70,7 +70,7 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE.'XYZ',
+                    'vrm' => self::$PLATE.'XYZ',
                     'time_in' => null,
                     'expired' => true,
                     'expiration_time' => null,
@@ -95,7 +95,7 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                     'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
@@ -117,7 +117,7 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                     'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
@@ -139,7 +139,7 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                     'expiration_time' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
@@ -157,7 +157,7 @@ class VehicleSearchTest extends ApiTestCase
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
-        $vehicle->setLicensePlate(self::$PLATE);
+        $vehicle->setVrm(self::$PLATE);
         $vehicle->setTimeIn($yesterday);
 
         $entityManager->persist($vehicle);
@@ -171,12 +171,12 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => $yesterday->format('Y-m-d H:i:s'),
                     'expired' => true,
                 ],
@@ -243,12 +243,12 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => $yesterday->format('Y-m-d H:i:s'),
                     'expired' => false,
                 ],
@@ -266,7 +266,7 @@ class VehicleSearchTest extends ApiTestCase
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
-        $vehicle->setLicensePlate(self::$PLATE);
+        $vehicle->setVrm(self::$PLATE);
         $vehicle->setTimeIn($ten_minutes_ago);
 
         $entityManager->persist($vehicle);
@@ -280,17 +280,17 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'expired' => true,
                 ],
             ],
@@ -312,17 +312,17 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'time_in' => self::$TIME_IN,
                     'expired' => false,
                 ],
                 [
-                    'license_plate' => self::$PLATE,
+                    'vrm' => self::$PLATE,
                     'expired' => false,
                 ],
             ],

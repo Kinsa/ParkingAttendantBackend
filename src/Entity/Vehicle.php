@@ -14,7 +14,7 @@ class Vehicle
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $license_plate = null;
+    private ?string $vrm = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $time_in = null;
@@ -24,14 +24,14 @@ class Vehicle
         return $this->id;
     }
 
-    public function getLicensePlate(): ?string
+    public function getVrm(): ?string
     {
-        return $this->license_plate;
+        return $this->vrm;
     }
 
-    public function setLicensePlate(string $license_plate): static
+    public function setVrm(string $vrm): static
     {
-        $this->license_plate = $license_plate;
+        $this->vrm = $vrm;
 
         return $this;
     }

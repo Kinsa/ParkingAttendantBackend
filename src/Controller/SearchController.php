@@ -86,7 +86,7 @@ class SearchController extends AbstractController
                     'message' => 'No results found.',
                     'results' => [
                         [
-                            'license_plate' => $plate,
+                            'vrm' => $plate,
                             'time_in' => null,
                             'expired' => true,
                             'expiration_time' => null,
@@ -107,7 +107,7 @@ class SearchController extends AbstractController
                     $is_expired = $expired_at < $latestSafeParkedTime;
 
                     $matches[$i] = [
-                        'license_plate' => $matches[$i]['license_plate'],
+                        'vrm' => $matches[$i]['vrm'],
                         'time_in' => $time_in_str,
                         'expired' => $is_expired,
                         'expiration_time' => $expired_at->format('Y-m-d H:i:s'),
