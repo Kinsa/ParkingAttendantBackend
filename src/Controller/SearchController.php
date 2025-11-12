@@ -30,7 +30,17 @@ class SearchController extends AbstractController
     {
         $response = new JsonResponse();
         $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-        $response->setData(['message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.', 'results' => []]);
+        $response->setData(['message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.']);
+
+        return $response;
+    }
+
+    private function returnInvalidWindowResponse(): JsonResponse
+    {
+        $response = new JsonResponse();
+        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+        $response->setData(['message' => 'Invalid window format or value. Window must be an integer value.']);
+
         return $response;
     }
 
@@ -40,7 +50,6 @@ class SearchController extends AbstractController
         #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] int $window = 120,
     ): JsonResponse {
-
         if (empty($datetime)) {
             // Set default values for date parameters if not provided
             $calculateExpiredParkingFrom = new \DateTimeImmutable('now');
@@ -57,9 +66,12 @@ class SearchController extends AbstractController
         }
 
         // Calculate parking duration window
-        $parkingWindow = new \DateInterval('PT'.$window.'M');
-
-        $latestSafeParkedTime = $calculateExpiredParkingFrom->sub($parkingWindow);
+        try {
+            $parkingWindow = new \DateInterval('PT'.$window.'M');
+            $latestSafeParkedTime = $calculateExpiredParkingFrom->sub($parkingWindow);
+        } catch (\Exception $e) {
+            return self::returnInvalidWindowResponse();
+        }
 
         // create a new Response object
         $response = new JsonResponse();
@@ -107,8 +119,7 @@ class SearchController extends AbstractController
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             $response->setData(
                 [
-                    'message' => 'A vehicle license plate is required via the plate query string. e.g. `plate=AA%201234AB`.',
-                    'results' => [],
+                    'message' => 'A vehicle license plate is required.',
                 ],
             );
         }

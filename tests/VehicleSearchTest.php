@@ -52,8 +52,7 @@ class VehicleSearchTest extends ApiTestCase
         static::createClient()->request('GET', '/search');
 
         $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains(['message' => 'A vehicle license plate is required via the plate query string. e.g. `plate=AA%201234AB`.']);
-        $this->assertJsonContains(['results' => []]);
+        $this->assertJsonContains(['message' => 'A vehicle license plate is required.']);
     }
 
     /**
@@ -195,7 +194,6 @@ class VehicleSearchTest extends ApiTestCase
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
-            'results' => [],
             'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
         ]);
     }
@@ -212,7 +210,6 @@ class VehicleSearchTest extends ApiTestCase
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
-            'results' => [],
             'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
         ]);
     }
@@ -227,7 +224,6 @@ class VehicleSearchTest extends ApiTestCase
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
-            'results' => [],
             'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
         ]);
     }
@@ -331,5 +327,16 @@ class VehicleSearchTest extends ApiTestCase
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Test a bad window format. MapQueryParameter automatically handles this and returns a 404.
+     */
+    public function testBadWindow(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE, 'window' => 'zebra'],
+        ]);
+        $this->assertResponseStatusCodeSame(404);
     }
 }
