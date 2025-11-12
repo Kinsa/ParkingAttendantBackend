@@ -52,7 +52,7 @@ class VehicleSearchTest extends ApiTestCase
         static::createClient()->request('GET', '/search');
 
         $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains(['message' => 'A vehicle license plate is required.']);
+        $this->assertJsonContains(['message' => 'A VRN is required.']);
     }
 
     /**
@@ -62,7 +62,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testNoResultsFound(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE.'XYZ'],
+            'query' => ['vrm' => self::$PLATE.'XYZ'],
         ]);
 
         $this->assertResponseStatusCodeSame(404);
@@ -88,7 +88,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testMatchFound(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE],
+            'query' => ['vrm' => self::$PLATE],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -110,7 +110,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testSimilarMatchFound(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$SIMILAR_PLATE],
+            'query' => ['vrm' => self::$SIMILAR_PLATE],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -132,7 +132,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testPartialSimilarMatchFound(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => substr(self::$PLATE, 0, 8)],
+            'query' => ['vrm' => substr(self::$PLATE, 0, 8)],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -164,7 +164,7 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE],
+            'query' => ['vrm' => self::$PLATE],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '2 results found.']);
@@ -190,7 +190,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testBadSpecificDateQuery(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'datetime' => 'xylophone'],
+            'query' => ['vrm' => self::$PLATE, 'datetime' => 'xylophone'],
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
@@ -206,7 +206,7 @@ class VehicleSearchTest extends ApiTestCase
         $yesterday = new \DateTimeImmutable('-1 day');
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d')],
+            'query' => ['vrm' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d')],
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
@@ -220,7 +220,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testSpecificDateQueryWithBadDate(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'datetime' => '2025-02-30 12:00:00'],
+            'query' => ['vrm' => self::$PLATE, 'datetime' => '2025-02-30 12:00:00'],
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
@@ -236,7 +236,7 @@ class VehicleSearchTest extends ApiTestCase
         $yesterday = new \DateTimeImmutable('-1 day');
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d H:i:s')],
+            'query' => ['vrm' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d H:i:s')],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '2 results found.']);
@@ -273,7 +273,7 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE],
+            'query' => ['vrm' => self::$PLATE],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '3 results found.']);
@@ -305,7 +305,7 @@ class VehicleSearchTest extends ApiTestCase
         $ten_minutes_ago = new \DateTimeImmutable('-10 minutes');
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'window' => 2880],
+            'query' => ['vrm' => self::$PLATE, 'window' => 2880],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '3 results found.']);
@@ -335,7 +335,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testBadWindow(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['plate' => self::$PLATE, 'window' => 'zebra'],
+            'query' => ['vrm' => self::$PLATE, 'window' => 'zebra'],
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertResponseStatusCodeSame(400);

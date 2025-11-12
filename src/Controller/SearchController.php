@@ -47,7 +47,7 @@ class SearchController extends AbstractController
     #[Route('/search', name: 'search')]
     public function search(
         LoggerInterface $logger,
-        #[MapQueryParameter] string $plate = '',
+        #[MapQueryParameter] string $vrm = '',
         #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] string $window = '120',
     ): JsonResponse {
@@ -84,15 +84,15 @@ class SearchController extends AbstractController
 
         $vehicleRepository = $this->doctrine;
 
-        if (!empty($plate)) {
-            $matches = $vehicleRepository->findByPlate($plate);
+        if (!empty($vrm)) {
+            $matches = $vehicleRepository->findByPlate($vrm);
             if (empty($matches)) {
                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
                 $response->setData([
                     'message' => 'No results found.',
                     'results' => [
                         [
-                            'vrm' => $plate,
+                            'vrm' => $vrm,
                             'time_in' => null,
                             'session' => 'none',
                             'session_end' => null,
@@ -135,7 +135,7 @@ class SearchController extends AbstractController
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             $response->setData(
                 [
-                    'message' => 'A vehicle license plate is required.',
+                    'message' => 'A VRN is required.',
                 ],
             );
         }
