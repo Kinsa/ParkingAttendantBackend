@@ -38,11 +38,20 @@ docker-compose stop
 
 ## Symfony
 
+### Run server
+
+```bash
+# sh
+symfony server:start
+```
+
+## Steps taken
+
 The Symfony project was initially configured to build the minimal framework via `symfony new my_project_directory --version="7.3.x"`.
 
 ### Modeling
 
-Doctrine was added [following the directions](https://symfony.com/doc/current/doctrine.html) and an Entity class for Vehicle was setup in the database. As an MVP it contains fields for `id`, `license_plate` (string), and `time_in` (immutable datetime)
+Doctrine was added [following the directions](https://symfony.com/doc/current/doctrine.html) and an Entity class for Vehicle was setup in the database. As an MVP it contains fields for `id`, `license_plate` (string), and `time_in` (immutable datetime) (I initially called it Vehicles, mixing up my singular/plural best practices; I then refactored to make it singular)
 
 #### Fixture
 
@@ -74,5 +83,24 @@ And then I had to figure out how to call my Registry method in my controller: ht
 
 And smoke tested it again in Postman
 
-Which seemed like a good time to add some tests
+Which seemed like a good time to add some programmatic tests before getting into fuzzy matching with [SOUNDEX()](https://stackoverflow.com/questions/369755/how-do-i-do-a-fuzzy-match-of-company-names-in-mysql-for-auto-complete)
 
+I ran `symfony console make:test` to create a test and chose API Test from the menu. The scaffolding code referenced JSON and knowing I needed to go there anyway, I Googled how to encode a JSON response and found https://symfony.com/doc/current/components/http_foundation.html#creating-a-json-response
+
+I then tried to run them and realised I needed to install the Test package: `composer require --dev symfony/test-pack` per https://symfony.com/doc/current/testing.html
+
+And I needed to modify my docker config. The error I was getting indicated that my user didn't have privlidges for the test database. I knew I needed to GRANT ALL on * but wasn't sure how to do that with docker so I provided the docker-compose file to Claude and asked it how I would modify it so that my user had access to all databases. It then showed me how to create a SQL file to be run when bringing up the container to run the GRANT command
+
+I then had to remigrate and re load the fixture:
+
+```bash
+# sh
+php bin/console doctrine:migrations:migrate
+php bin/console doctrine:fixtures:load
+```
+
+I then was able to create the database and tables with the commands from https://symfony.com/doc/current/testing.html and re-run `./bin/phpunit`
+
+My test wasn't running though. I realized the package for ApiTest wasn't installed even though I had installed the testing package. After Googling a bit, I asked Claude where it came from and it pointed me to `composer require api-platform/api-pack` which lined up to what I had been seeing about assertJsonContains() in the google search results. I installed that and got tests to run
+
+I had to ask Claude how to fix the deprecation error. It added `protected static ?bool $alwaysBootKernel = true;`
