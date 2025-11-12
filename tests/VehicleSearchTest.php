@@ -186,6 +186,81 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
+     * Test a bad datetime query.
+     */
+    public function testBadSpecificDateQuery(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE, 'datetime' => 'xylophone'],
+        ]);
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertJsonContains([
+            'results' => [],
+            'message' => 'The datetime query parameter must be a valid date in the format YYYY-MM-DD HH:MM:SS.',
+        ]);
+    }
+
+    /**
+     * Test a partial datetime query.
+     */
+    public function testPartialSpecificDateQuery(): void
+    {
+        $yesterday = new \DateTimeImmutable('-1 day');
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d')],
+        ]);
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertJsonContains([
+            'results' => [],
+            'message' => 'The datetime query parameter must be a valid date in the format YYYY-MM-DD HH:MM:SS.',
+        ]);
+    }
+
+    /**
+     * Test datetime query with a bad date.
+     */
+    public function testSpecificDateQueryWithBadDate(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE, 'datetime' => '2025-02-30 12:00:00'],
+        ]);
+        $this->assertResponseStatusCodeSame(400);
+        $this->assertJsonContains([
+            'results' => [],
+            'message' => 'The datetime query parameter must be a valid date in the format YYYY-MM-DD HH:MM:SS.',
+        ]);
+    }
+
+    /**
+     * Test the same car, yesterday, when queried with yesterday's date.
+     */
+    public function testSpecificDateQuery(): void
+    {
+        $yesterday = new \DateTimeImmutable('-1 day');
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['plate' => self::$PLATE, 'datetime' => $yesterday->format('Y-m-d H:i:s')],
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '2 results found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => self::$TIME_IN,
+                    'expired' => false,
+                ],
+                [
+                    'license_plate' => self::$PLATE,
+                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
+                    'expired' => false,
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Test the same car, left and returned within the window is counted twice.
      * Remember, the car from the previous test still exists in the database.
      */

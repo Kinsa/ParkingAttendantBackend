@@ -15,15 +15,42 @@ class SearchController extends AbstractController
     {
     }
 
+    private function returnInvalidDateResponse()
+    {
+        $response = new JsonResponse();
+        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+        $response->setData(
+            [
+                'message' => 'The datetime query parameter must be a valid date in the format YYYY-MM-DD HH:MM:SS.',
+                'results' => [],
+            ],
+        );
+        // set the response content type to application/json (not plain text for JSON)
+        $response->headers->set('Content-Type', 'application/json');
+
+        return $response;
+    }
+
     #[Route('/search', name: 'search')]
     public function search(
         #[MapQueryParameter] string $plate = '',
-        #[MapQueryParameter] ?\DateTime $at = null,
+        #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] int $window = 120,
     ): JsonResponse {
         // Set default values for date parameters if not provided
-        if (null === $at) {
+        if (empty($datetime)) {
             $calculateExpiredParkingFrom = new \DateTimeImmutable('now');
+        } else {
+            // Test for a valid datetime format
+            if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $datetime)) {
+                return $this->returnInvalidDateResponse();
+            } else {
+                try {
+                    $calculateExpiredParkingFrom = new \DateTimeImmutable($datetime);
+                } catch (\Exception $e) {
+                    return $this->returnInvalidDateResponse();
+                }
+            }
         }
 
         // Calculate parking duration window
@@ -40,12 +67,17 @@ class SearchController extends AbstractController
             $matches = $vehicleRepository->findByPlate($plate);
             if (!$matches || empty($matches)) {
                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                $response->setData(['message' => 'No results found.', 'results' => [[
-                    'license_plate' => $plate,
-                    'time_in' => null,
-                    'expired' => true,
-                    'expiration_time' => null,
-                ]]]);
+                $response->setData([
+                    'message' => 'No results found.',
+                    'results' => [
+                        [
+                            'license_plate' => $plate,
+                            'time_in' => null,
+                            'expired' => true,
+                            'expiration_time' => null,
+                        ],
+                    ],
+                ]);
             } else {
                 $response->setStatusCode(Response::HTTP_OK);
                 $message = count($matches).' ';
@@ -70,7 +102,12 @@ class SearchController extends AbstractController
             }
         } else {
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            $response->setData(['message' => 'A vehicle license plate is required via the plate query string. e.g. `plate=AA%201234AB`.', 'results' => []]);
+            $response->setData(
+                [
+                    'message' => 'A vehicle license plate is required via the plate query string. e.g. `plate=AA%201234AB`.',
+                    'results' => [],
+                ],
+            );
         }
 
         // set the response content type to application/json (not plain text for JSON)
