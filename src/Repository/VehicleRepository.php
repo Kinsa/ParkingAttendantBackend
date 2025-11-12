@@ -41,6 +41,9 @@ class VehicleRepository extends ServiceEntityRepository
     //        ;
     //    }
 
+    /**
+    * @return [] Returns an array of Vehicle objects
+    */
     public function findByPlate(string $licensePlate): ?array
     {
         $conn = $this->getEntityManager()->getConnection();

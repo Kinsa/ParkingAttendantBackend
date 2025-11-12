@@ -104,3 +104,21 @@ I then was able to create the database and tables with the commands from https:/
 My test wasn't running though. I realized the package for ApiTest wasn't installed even though I had installed the testing package. After Googling a bit, I asked Claude where it came from and it pointed me to `composer require api-platform/api-pack` which lined up to what I had been seeing about assertJsonContains() in the google search results. I installed that and got tests to run
 
 I had to ask Claude how to fix the deprecation error. It added `protected static ?bool $alwaysBootKernel = true;`
+
+With that in place I was able to add tests for a bad request (lacking the plate query parameter) and a plate not found (passing a plate not in the database - easy since at this point nothing is in the database). 
+
+To test an okay response, I needed to populate the test database with a fixture via a test factory. Going back to the API Pack tutorial: Use the Factory to make test data (tutorial at https://api-platform.com/docs/symfony/testing/#creating-data-fixtures):
+
+Installed `composer require --dev foundry orm-fixtures`
+
+Created a factory: `bin/console make:factory 'App\Entity\Vehicle'` which  created: `src/Factory/VehicleFactory.php`
+
+Realised at this point I was getting ahead of myself, while I will need a factory eventually, what I need right now is a single entry. Went back and added a setUp method to the test to do so. I went back to the entity docs to review creating an object in the ORM: https://symfony.com/doc/current/doctrine.html#persisting-objects-to-the-database and I refreshed via AI how to create a datetime from a string in PHP. GitHub autopilot autocomplete filled in `$entityManager = self::getContainer()->get('doctrine')->getManager();` as I was trying to work out how to initiate the correct object.
+
+I could see in the database that the test vehcile was getting added but not getting removed so I added a tear down method as well to clean the database.
+
+Continuing to debug, I found some syntax errors. I finally asked AI for help:
+
+"does this tear down method run after my test? i'm getting no results found with it in place" and "i have set up and tear down methods. the setup method runs before each test. how can i have it run once before the test suite? how can i run teh tear down method after the test suite."
+
+It then made some changes.

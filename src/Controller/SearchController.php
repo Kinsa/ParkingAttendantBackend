@@ -30,16 +30,16 @@ class SearchController extends AbstractController
             $matches = $vehicleRepository->findByPlate($plate);
             if (!$matches || empty($matches)) {
                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                $response->setData(['message'=>'No matches found.', 'results'=>[]]);
+                $response->setData(['message'=>'No results found.', 'results'=>[]]);
             } else {
                 $response->setStatusCode(Response::HTTP_OK);
-                $response->setData(['message'=>"{count($matches)} results found.", 'results'=>json_encode($matches)]);
+                $message = count($matches) === 1 ? 'result' : 'results';
+                $response->setData(['message' => count($matches) . " $message found.", 'results' => $matches]);
             }
         } else {
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             $response->setData(['message'=>'A vehicle license plate is required via the plate query string. e.g. `plate=AA%201234AB`.', 'results'=>[]]);
         }
-
 
         // set the response content type to application/json (not plain text for JSON)
         $response->headers->set('Content-Type', 'application/json');
