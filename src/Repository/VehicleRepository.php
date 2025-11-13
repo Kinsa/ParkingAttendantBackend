@@ -54,16 +54,10 @@ class VehicleRepository extends ServiceEntityRepository
         $dateCondition = !empty($query_from_str) && !empty($query_to_str) ? 'AND v.time_in BETWEEN :query_from AND :query_to' : '';
 
         $sql = <<<SQL
-            SELECT DISTINCT * FROM (
-                (SELECT * FROM vehicle v
-                 WHERE v.vrm SOUNDS LIKE :vrm {$dateCondition})
-                UNION ALL
-                (SELECT * FROM vehicle v
-                 WHERE v.vrm LIKE CONCAT("%", :vrm, "%") {$dateCondition})
-                UNION ALL
-                (SELECT * FROM vehicle v
-                 WHERE :vrm LIKE CONCAT("%", v.vrm, "%") {$dateCondition})
-            ) AS combined_results
+            SELECT DISTINCT *, levenshtein(:vrm, v.vrm) AS distance
+            FROM vehicle v
+            WHERE levenshtein(:vrm, v.vrm) BETWEEN 0 AND 3 {$dateCondition}
+            -- ORDER BY levenshtein(:vrm, v.vrm) ASC, time_in DESC
             ORDER BY time_in DESC
         SQL;
 

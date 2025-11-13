@@ -125,7 +125,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testPartialSimilarMatchFoundFront(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => substr(self::$VRM, 0, 5)],
+            'query' => ['vrm' => substr(self::$VRM, 0, 6)],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -197,12 +197,11 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test similar lookup with a complete value input for lookup but only partial value stored.
+     * Test similar lookup with a complete value input for lookup but only partial value stored further confusing things by swapping a letter for a number.
      */
-    public function testSimilarPartialVRMRecorded(): void
+    public function testSimilarPartialVRMRecordedSwapNumberAndLetter(): void
     {
-        $this->markTestSkipped('FAILING - Likely requires refactoring fuzzy search to use Levenshtein distance.');
-
+        $this->markTestSkipped('FAILING - Requires a Levenshtein distance > 4 or regex matching common character confusions (O/0, I/1, O/Q, B/8, etc.).');
 
         $fullVRM = 'ZZ 7689XY';
         $partialVRM = substr($fullVRM, 2, 6);
@@ -231,7 +230,7 @@ class VehicleSearchTest extends ApiTestCase
             ],
         ]);
     }
-    
+
     /**
      * Test the same VRM, yesterday, is returned with a full session for yesterday and a partial session for today.
      */

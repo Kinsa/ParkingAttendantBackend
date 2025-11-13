@@ -112,6 +112,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 |  8 | MA94 TEJ | 2025-11-11 17:16:00 |
 |  1 | MA06 GLQ | 2025-11-11 19:46:00 |
 |  3 | MA15 BSL | 2025-11-11 19:55:00 |
+| 21 | 16 GX    | 2025-11-11 20:41:00 |
 | 16 | MA94 IWT | 2025-11-11 22:11:00 |
 |  5 | MA10 JPJ | 2025-11-11 23:23:00 |
 +----+----------+---------------------+
@@ -152,25 +153,31 @@ docker-compose stop
 
 ## Use Cases
 
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system, I want to know if the vehicle's session has expired or not.
+As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM value into the system, I want to know if the vehicle's session has expired or not.
 
-The system uses the current date time and a 2 hour window as defaults, requiring a minimum of the VRM mark. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
+The system uses the current date time and a 2 hour window as defaults, requiring a minimum input of the VRM. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
+
+I search for the vehicle with plate `MA19 ZZW`
 
 ```
 GET http://parking.kinsacreative.com/search?vrm=MA19 ZZW
 ```
 
+The response shows the vehicle has been logged in and it's session is expired
+
 --
 
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The license plate is dirty and an 'O' looks like a '0'. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
+As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM value into the system. The license plate is dirty. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
 
 The system uses fuzzy matching to look up similar values. The response includes the VRM value captured for manual verification.
 
+I search for the VRM value `MA06 GLO`. A bit of dirt on the O makes it look like a Q.
+
 ```
-GET http://parking.kinsacreative.com/search?vrm=MA04 0CM
+GET http://parking.kinsacreative.com/search?vrm=MA06 GLO
 ```
 
-Plate stored in system: `MA04 OCM`
+The response shows a match for `MA04 OCM`. At this point numbers alone aren't enough for me to determine if this is the same car or not.
 
 --
 
@@ -182,18 +189,18 @@ The system uses wildcard matching to look up partial values. The response includ
 GET http://parking.kinsacreative.com/search?vrm=MA16 GXX
 ```
 
-Plate stored in system: `16 GX` at 20:41:00
+The response shows a match for: `16 GX` at 20:41:00. I can see the same vehicle entered the lot at 15:49. At this point numbers alone aren't enough for me to determine if this is the same car or not.
 
 --
 
 As a traffic warden managing a lot with user-set parking session times, I want to know if the vehicle's session has expired or not. 
 
-I manually input a VRM mark into the system as well as the session duration the driver has paid for. 
+I manually input a VRM value into the system as well as the session duration the driver has paid for. 
 
-The system accepts a parameter for a custom parking window. 
+The system accepts a parameter for a custom parking window. My system already knows what window the user paid for and updates the query automatically. I simply enter the VRM value
 
 ```
-http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-11 22:00:00
+GET http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-11 22:00:00
 ```
 
 It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session expires at 22:15, they have a partial session.
@@ -201,7 +208,7 @@ It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session exp
 I come back around at 1am and recheck, the session should now be full:
 
 ```
-http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-12 01:00:00
+GET http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-12 01:00:00
 ```
 
 --
@@ -209,6 +216,22 @@ http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11
 As a traffic warden managing a lot, a customer is challenging a ticket. I need to be able to query a specific date to see if the session was full or not.
 
 The system accepts a parameter for a custom datetime. 
+
+I issued a ticket to MA93 GEG at 8am on 11/11. 
+
+```
+GET http://parking.kinsacreative.com/search?datetime=2025-11-11 08:00:00&vrm=MA93 GEG
+```
+
+Instead of checking now, I check as if it was 8am on 11/11 and see that MA93 GEG's session was full.
+
+That result is a bit confusing though, there are three matches. I add parameters to limit the timeframe to a narrower window. Since I know the ticket was expired at 8, I set that as the upper limit and set the lower limit to midnight.
+
+```
+GET http://parking.kinsacreative.com/search?query_from=2025-11-11 00:00:00&query_to=2025-11-11 08:00:00&datetime=2025-11-11 08:00:00&vrm=MA93 GEG
+```
+
+That's better, now there are two results to pick through instead of three. At this point, I could sort by distance ("match likelihood" in my app to bring the exact match to the front.
 
 --
 
@@ -394,8 +417,11 @@ php bin/console doctrine:migrations:migrate
 - In testing the use cases against the database fixture I ran into an unexpected result. I was seeing a partial session when I was expecting to see a full session when comparing across days. Initially I thought this was an issue with date comparisons. A string instead of a datetime object. Reviewing the code though that wasn't it. I added a failing test case and working back and forth with AI debugged it to a bad comparison. When I refactored from the date range determining the window, I was checking if they had parked before the window began, AI suggested that what I should really be checking is if they were still there after the session ended.
 - AI assistance: debugging; suggested refactor
 
+### 12. Levenshtein distance 
+- In testing the use cases against the database fixture, I discovered that `SOUNDS LIKE`, as the name implies, is auditory. Q and O don't sound anything like each other but a bit of mud on an O makes it a Q, or vice versa. I found https://lucidar.me/en/web-dev/levenshtein-distance-in-mysql/ and added the levenshtein function to my database. I then refactored the SQL query to utilise that instead of `SOUNDS LIKE`. This allowed me to enable the `testSimilarPartialVRMRecorded()` test which now passes. With a distance of 4, all tests passed, but the results were too dissimilar. I limited it to 3 which required me to disable the test that swapped an 8 and a B. Further tuning might be in order and likely regex matching (O/0, I/1, O/Q, B/8, etc.).
+
 ### Outstanding Items
+- [ ] Add order_by parameter to allow ordering by distance
 - [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)
 - [ ] `testSameCarTwiceWithinWindow()` illustrates someone trying to hack things by leaving and returning within the same  time frame; check each time_in against the previous in the loop, if it is less than the window duration, create an adjusted_time in that matches the original before evaluating the session completeness
-- [ ] `testSimilarPartialVRMRecorded()` illustrates the limitations of the `SOUNDS LIKE` and `LIKE` matching queries. We probably need to implement a Levenshtein distance algorithm instead based on my Googling (we used this method for search in ElasticSearch at LeadMedia to good effect)
-- [ ] Test at scale: how usable is the response if you have a busy lot or a lot of vehicles? Are we returning too many results now with our fuzzy matching; do we need to implement Levenshtein sooner than later? Do we need more complex ranking of the response that isn't just closest to the date but best match?
+- [ ] In addition to Levenshtein matching, implement regex matching (O/0, I/1, O/Q, B/8, etc.)
