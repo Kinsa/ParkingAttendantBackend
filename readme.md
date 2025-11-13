@@ -64,7 +64,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 **No match (200 OK):**
 ```json
 {
-  "message": "No matches for VRN found.",
+  "message": "No matches for VRM found.",
   "results": [
     {
       "vrm": "AB12CDE",
@@ -79,7 +79,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 **Error (400 Bad Request):**
 ```json
 {
-  "message": "A VRN is required."
+  "message": "A VRM is required."
 }
 ```
 

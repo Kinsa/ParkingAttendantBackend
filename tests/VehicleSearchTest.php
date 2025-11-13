@@ -49,7 +49,7 @@ class VehicleSearchTest extends ApiTestCase
         static::createClient()->request('GET', '/search');
 
         $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains(['message' => 'A VRN is required.']);
+        $this->assertJsonContains(['message' => 'A VRM is required.']);
     }
 
     /**
@@ -62,7 +62,7 @@ class VehicleSearchTest extends ApiTestCase
         ]);
 
         $this->assertResponseStatusCodeSame(200);
-        $this->assertJsonContains(['message' => 'No matches for VRN found.']);
+        $this->assertJsonContains(['message' => 'No matches for VRM found.']);
         $this->assertJsonContains([
             'results' => [
                 [
@@ -233,7 +233,7 @@ class VehicleSearchTest extends ApiTestCase
     }
     
     /**
-     * Test the same VRN, yesterday, is returned with a full session for yesterday and a partial session for today.
+     * Test the same VRM, yesterday, is returned with a full session for yesterday and a partial session for today.
      */
     public function testSameCarOutsideOfTimeframeIsExcluded(): void
     {

@@ -143,7 +143,7 @@ class SearchController extends AbstractController
             $response->setStatusCode(Response::HTTP_OK);
             if (empty($matches)) {
                 $response->setData([
-                    'message' => 'No matches for VRN found.',
+                    'message' => 'No matches for VRM found.',
                     'results' => [
                         [
                             'vrm' => $vrm,
@@ -188,7 +188,7 @@ class SearchController extends AbstractController
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             $response->setData(
                 [
-                    'message' => 'A VRN is required.',
+                    'message' => 'A VRM is required.',
                 ],
             );
         }
