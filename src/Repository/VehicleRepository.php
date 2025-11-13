@@ -48,7 +48,10 @@ class VehicleRepository extends ServiceEntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        $dateCondition = !empty($query_from) ? 'AND v.time_in BETWEEN :query_from AND :query_to' : '';
+        $query_from_str = $query_from ? $query_from->format('Y-m-d H:i:s') : '';
+        $query_to_str = $query_to ? $query_to->format('Y-m-d H:i:s') : '';
+
+        $dateCondition = !empty($query_from_str) && !empty($query_to_str) ? 'AND v.time_in BETWEEN :query_from AND :query_to' : '';
 
         $sql = <<<SQL
             SELECT DISTINCT * FROM (
@@ -63,8 +66,8 @@ class VehicleRepository extends ServiceEntityRepository
 
         $resultSet = $conn->executeQuery($sql, [
             'vrm' => $vrm,
-            'query_from' => $query_from,
-            'query_to' => $query_to,
+            'query_from' => $query_from_str,
+            'query_to' => $query_to_str,
         ]);
 
         // returns an array of arrays (i.e. a raw data set)

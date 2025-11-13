@@ -246,9 +246,12 @@ Quickly outlining next steps:
 - [x] Rename 'plate' to 'VRM'
 - [ ] Reinstate optional date parameters to limit the queried response to a specific period
   - [x] add query_from and query_to query parameters
-  - [ ] convert the strings to datetime objects; verify formatting
-  - [ ] verify that datetime is within query_from and query_to or raise an error
-  - [ ] update $matches = $vehicleRepository->findByPlate($vrm); to pass from and to along to the repository
+  - [x] convert the strings to datetime objects; verify formatting
+    - [ ] test
+  - [x] verify that datetime is within query_from and query_to or raise an error
+    - [ ] test
+  - [x] update $matches = $vehicleRepository->findByPlate($vrm); to pass from and to along to the repository
   - [x] update the SQL query to conditionally handle those parameters
 - [x] Refactor 'expired' to indicate 'partial session', 'full session', or 'no session' (with 'expired' equaling 'full session' and 'no session' being the no math return)
 - [ ] Revisit timezones - datetime query parameter should probably account for this and we need to handle it
+- [ ] Document how to use

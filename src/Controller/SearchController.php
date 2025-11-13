@@ -53,8 +53,8 @@ class SearchController extends AbstractController
         #[MapQueryParameter] string $query_from = '',
         #[MapQueryParameter] string $query_to = '',
     ): JsonResponse {
+        // Set default values for date parameters if not provided
         if (empty($datetime)) {
-            // Set default values for date parameters if not provided
             $calculateParkingSessionsFrom = new \DateTimeImmutable('now');
         } else {
             if (!self::isValidDateTime($datetime)) {
@@ -69,8 +69,7 @@ class SearchController extends AbstractController
         }
 
         // Calculate parking duration window
-        if (!is_numeric($window) || (int) $window <= 0
-        ) {
+        if (!is_numeric($window) || (int) $window <= 0) {
             return self::returnInvalidWindowResponse();
         } else {
             try {
@@ -81,13 +80,66 @@ class SearchController extends AbstractController
             }
         }
 
+        // From and to
+        if (empty($query_from)) {
+            $query_from_dt = null;
+        } else {
+            if (!self::isValidDateTime($query_from)) {
+                return self::returnInvalidDateResponse('query_from');
+            } else {
+                try {
+                    $query_from_dt = new \DateTimeImmutable($query_from);
+                } catch (\Exception $e) {
+                    return self::returnInvalidDateResponse('query_from');
+                }
+            }
+        }
+
+        if (empty($query_to)) {
+            $query_to_dt = null;
+        } else {
+            if (!self::isValidDateTime($query_to)) {
+                return self::returnInvalidDateResponse('query_to');
+            } else {
+                try {
+                    $query_to_dt = new \DateTimeImmutable($query_to);
+                } catch (\Exception $e) {
+                    return self::returnInvalidDateResponse('query_to');
+                }
+            }
+        }
+
+        if (isset($query_from_dt) && !isset($query_to_dt) || !isset($query_from_dt) && isset($query_to_dt)) {
+            $response = new JsonResponse();
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            $response->setData(['message' => 'Both query_from and query_to must be provided together.']);
+
+            return $response;
+        }
+
+        if ($query_from_dt && $query_to_dt && $query_from_dt > $query_to_dt) {
+            $response = new JsonResponse();
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            $response->setData(['message' => 'query_from must be earlier than or equal to query_to.']);
+
+            return $response;
+        }
+
+        if ($query_from_dt && $query_to_dt && ($calculateParkingSessionsFrom < $query_from_dt || $calculateParkingSessionsFrom > $query_to_dt)) {
+            $response = new JsonResponse();
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            $response->setData(['message' => 'datetime must be later than or equal to query_from and earlier than or equal to query_to.']);
+
+            return $response;
+        }
+
         // create a new Response object
         $response = new JsonResponse();
 
         $vehicleRepository = $this->doctrine;
 
         if (!empty($vrm)) {
-            $matches = $vehicleRepository->findByVrm($vrm, null, null);
+            $matches = $vehicleRepository->findByVrm($vrm, $query_from_dt, $query_to_dt);
             $response->setStatusCode(Response::HTTP_OK);
             if (empty($matches)) {
                 $response->setData([

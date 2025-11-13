@@ -45,7 +45,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test that a request without the plate parameter returns a bad request response.
+     * Test that a request without the VRM parameter returns a bad request response.
      */
     public function testNoPlateProvided(): void
     {
@@ -56,8 +56,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test that a license plate search for a plate not in the database
-     * returns a not found response.
+     * Test that a VRM search for a VRM not in the database returns a found response with session set as `none`.
      */
     public function testNoResultsFound(): void
     {
@@ -80,10 +79,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test that a license plate search returns matching results.
-     *
-     * Searches for an exact match of a plate and expects to find
-     * the full matching vehicle record.
+     * Test that a VRM-only search returns an exact match when one exists.
      */
     public function testMatchFound(): void
     {
@@ -105,7 +101,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test that a similar license plate search returns matching results.
+     * Test that a similar VRM search returns matching results (tests fuzzy search).
      */
     public function testSimilarMatchFound(): void
     {
@@ -127,7 +123,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test that a partial license plate search returns matching results.
+     * Test that a partial VRM search returns matching results (tests wildcard search).
      */
     public function testPartialSimilarMatchFound(): void
     {
@@ -149,7 +145,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test the same car, yesterday, is returned expired then but not for today.
+     * Test the same VRN, yesterday, is returned with a full session for yesterday and a partial session for today.
      */
     public function testSameCarOutsideOfTimeframeIsExcluded(): void
     {
@@ -215,7 +211,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test datetime query with a bad date.
+     * Test datetime query with a correctly formatted but invalid date.
      */
     public function testSpecificDateQueryWithBadDate(): void
     {
@@ -229,7 +225,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test the same car, yesterday, when queried with yesterday's date.
+     * Test the same VRM, yesterday, when queried with yesterday's date.
      */
     public function testSpecificDateQuery(): void
     {
@@ -257,7 +253,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test the same car, left and returned within the window is included for both entrances.
+     * Test the same car, left and returned within the current window is included for both entrances with partial sessions.
      * Remember, the car from the previous test still exists in the database.
      */
     public function testSameCarTwiceWithinWindow(): void
@@ -298,7 +294,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test the same car, with a 48 hour window.
+     * Test the same car, with a 48 hour window returns 3 partial sessions.
      */
     public function test48HourWindow(): void
     {
@@ -330,7 +326,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test a bad window format. MapQueryParameter automatically handles this and returns a 404.
+     * Test a bad window format.
      */
     public function testBadWindow(): void
     {
