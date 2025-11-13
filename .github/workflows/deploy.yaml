@@ -1,0 +1,93 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Configure specific PHP on the GitHub runner
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+
+    - name: Validate composer.json and composer.lock
+      run: composer validate
+
+    - name: Cache Composer packages
+      id: composer-cache
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-php-
+
+    - name: Install dependencies
+      env:
+        APP_ENV: prod
+        APP_DEBUG: 0
+      run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
+    # - name: Compile assets for production, overriding hard-coded env vars with GitHub env vars
+    #   env:
+    #     APP_ENV: prod
+    #     # Twig global variables - these override .env values
+    #     SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+    #     SITE_FIRST_NAME: ${{ vars.SITE_FIRST_NAME }}
+    #     SITE_LAST_NAME: ${{ vars.SITE_LAST_NAME }}
+    #     SITE_SINGULAR_PRONOUN: ${{ vars.SITE_SINGULAR_PRONOUN }}
+    #     SITE_POSSESSIVE_PRONOUN: ${{ vars.SITE_POSSESSIVE_PRONOUN }}
+    #   run: php bin/console asset-map:compile
+
+    - name: Deploy via rsync
+      uses: burnett01/rsync-deployments@6.0.0
+      with:
+        switches: -avzr --delete --exclude='.git*' --exclude='.env.local' --exclude='.env.prod.local' --exclude='var/cache/*' --exclude='var/log/*'
+        path: ./
+        remote_path: /var/www/parking.kinsacreative.com
+        remote_host: ${{ secrets.SSH_HOST }}
+        remote_user: ${{ secrets.SSH_USERNAME }}
+        remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: Clear cache
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /var/www/parking.kinsacreative.com
+
+          # Clear prod cache
+          php bin/console cache:clear --env=prod --no-debug
+
+          # Warm it up (pre-builds cache for better first request performance)
+          php bin/console cache:warmup --env=prod
+
+          # Create log directory if it doesn't exist
+          mkdir -p var/log var/cache
+
+          # Set group ownership to www-data (PHP-FPM user) and give group write access
+          chown -R webapps:www-data .
+          chmod -R 775 var
+
+          # Set setgid bit so new files inherit www-data group automatically
+          chmod g+s var/cache var/log
+
+          # Note: PHP-FPM reload requires sudo with password,
+          # OPcache will clear automatically on next request or use opcache_reset() in code
