@@ -195,6 +195,42 @@ class VehicleSearchTest extends ApiTestCase
             ],
         ]);
     }
+
+    /**
+     * Test similar lookup with a complete value input for lookup but only partial value stored.
+     */
+    public function testSimilarPartialVRMRecorded(): void
+    {
+        $this->markTestSkipped('FAILING - Likely requires refactoring fuzzy search to use Levenshtein distance.');
+
+
+        $fullVRM = 'ZZ 7689XY';
+        $partialVRM = substr($fullVRM, 2, 6);
+        $tenMinutesAgo = new \DateTimeImmutable('-10 minutes');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm($partialVRM);
+        $vehicle->setTimeIn($tenMinutesAgo);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['vrm' => 'ZZ 76B9XY'], // '8' replaced with 'B'
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => $partialVRM,
+                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                ]
+            ],
+        ]);
+    }
     
     /**
      * Test the same VRN, yesterday, is returned with a full session for yesterday and a partial session for today.

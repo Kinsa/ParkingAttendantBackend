@@ -141,6 +141,20 @@ The system uses wildcard matching to look up partial values. The response includ
 
 --
 
+As a traffic warden managing a lot with user-set parking session times, I want to know if the vehicle's session has expired or not. 
+
+I manually input a VRM mark into the system as well as the session duration the driver has paid for. 
+
+The system accepts a parameter for a custom parking window. 
+
+--
+
+As a traffic warden managing a lot, a customer is challenging a ticket. I need to be able to query a specific date to see if the session was full or not.
+
+The system accepts a parameter for a custom datetime. 
+
+--
+
 ## Symfony
 
 ### Create the databases
@@ -313,13 +327,15 @@ php bin/console doctrine:migrations:migrate
 - Added comprehensive API documentation with examples
 - Documented all query parameters, response formats, and session statuses
 
-### 10. Partials and Test Refactoring (`0334baf2`)
+### 10. Partials and Test Refactoring (`0334baf2`, `0266ce5`)
 - Added use cases to readme as full scenarios
 - The scenario for partials didn't actually match my test: revised test and updated the query so that if a partial VRM is recorded and a full VRM is searched for, responses are returned
 - If tests are run out of order they fail: revised setup and tear down from class based to test based so each test can be run in isolation
 - AI assistance: Explained `LIKE` query order in/out, Directed AI agent that I wanted to change setupBeforeClass and tearDownAfterClass to do that for each test individually 
 
 ### Outstanding Items
-- [ ] Timezone handling for datetime parameters
+- [ ] Deploy for review
+- [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)
 - [ ] `testSameCarTwiceWithinWindow()` illustrates someone trying to hack things by leaving and returning within the same  time frame; check each time_in against the previous in the loop, if it is less than the window duration, create an adjusted_time in that matches the original before evaluating the session completeness
-- [ ] Deploy
+- [ ] `testSimilarPartialVRMRecorded()` illustrates the limitations of the `SOUNDS LIKE` and `LIKE` matching queries. We probably need to implement a Levenshtein distance algorithm instead based on my Googling (we used this method for search in ElasticSearch at LeadMedia to good effect)
+- [ ] Test at scale: how usable is the response if you have a busy lot or a lot of vehicles? Are we returning too many results now with our fuzzy matching; do we need to implement Levenshtein sooner than later? Do we need more complex ranking of the response that isn't just closest to the date but best match?
