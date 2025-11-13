@@ -90,6 +90,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 
 ### Production Fixture Data
 
+```
 +----+----------+---------------------+
 | id | vrm      | time_in             |
 +----+----------+---------------------+
@@ -114,6 +115,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 | 19 | MA97 PPO | 2025-11-11 15:56:00 |
 | 20 | MA92 KKE | 2025-11-11 01:32:00 |
 +----+----------+---------------------+
+```
 
 ## Database
 
@@ -361,7 +363,6 @@ php bin/console doctrine:migrations:migrate
 - AI assistance: Explained `LIKE` query order in/out, Directed AI agent that I wanted to change setupBeforeClass and tearDownAfterClass to do that for each test individually 
 
 ### Outstanding Items
-- [ ] Deploy for review
 - [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)
 - [ ] `testSameCarTwiceWithinWindow()` illustrates someone trying to hack things by leaving and returning within the same  time frame; check each time_in against the previous in the loop, if it is less than the window duration, create an adjusted_time in that matches the original before evaluating the session completeness
 - [ ] `testSimilarPartialVRMRecorded()` illustrates the limitations of the `SOUNDS LIKE` and `LIKE` matching queries. We probably need to implement a Levenshtein distance algorithm instead based on my Googling (we used this method for search in ElasticSearch at LeadMedia to good effect)
