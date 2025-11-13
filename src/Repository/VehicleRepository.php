@@ -59,7 +59,10 @@ class VehicleRepository extends ServiceEntityRepository
                  WHERE v.vrm SOUNDS LIKE :vrm {$dateCondition})
                 UNION ALL
                 (SELECT * FROM vehicle v
-                 WHERE v.vrm LIKE CONCAT(:vrm, "%") {$dateCondition})
+                 WHERE v.vrm LIKE CONCAT("%", :vrm, "%") {$dateCondition})
+                UNION ALL
+                (SELECT * FROM vehicle v
+                 WHERE :vrm LIKE CONCAT("%", v.vrm, "%") {$dateCondition})
             ) AS combined_results
             ORDER BY time_in DESC
         SQL;

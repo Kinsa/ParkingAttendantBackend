@@ -9,20 +9,17 @@ class VehicleSearchTest extends ApiTestCase
 {
     private static $VRM = 'AA 1234AB';
     private static $SIMILAR_VRM = 'AA I2BAAB';
-    private static $TIME_IN;
+    private $TIME_IN;
 
     protected static ?bool $alwaysBootKernel = true;
 
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        parent::setUpBeforeClass();
+        parent::setUp();
 
-        // Initialize TIME_IN with current time minus 1 hour
+        // Initialize TIME_IN with current time minus 1 hour for each test
         $date = new \DateTimeImmutable('-1 hour');
-        self::$TIME_IN = $date->format('Y-m-d H:i:s');
-
-        // Boot kernel to get container
-        self::bootKernel();
+        $this->TIME_IN = $date->format('Y-m-d H:i:s');
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
@@ -33,15 +30,15 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
     }
 
-    public static function tearDownAfterClass(): void
+    protected function tearDown(): void
     {
-        parent::tearDownAfterClass();
-
-        // Clear the table after all tests
+        // Clear the table after each test
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $conn = $entityManager->getConnection();
         $sql = 'DELETE FROM vehicle';
         $conn->executeQuery($sql);
+
+        parent::tearDown();
     }
 
     /**
@@ -61,7 +58,7 @@ class VehicleSearchTest extends ApiTestCase
     public function testNoResultsFound(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM.'XYZ'],
+            'query' => ['vrm' => 'BATH'],
         ]);
 
         $this->assertResponseStatusCodeSame(200);
@@ -69,7 +66,7 @@ class VehicleSearchTest extends ApiTestCase
         $this->assertJsonContains([
             'results' => [
                 [
-                    'vrm' => self::$VRM.'XYZ',
+                    'vrm' => 'BATH',
                     'time_in' => null,
                     'session' => 'none',
                     'session_end' => null,
@@ -92,9 +89,9 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
-                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
@@ -114,21 +111,21 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
-                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
     }
 
     /**
-     * Test that a partial VRM search returns matching results (tests wildcard search).
+     * Test that a partial VRM search from the front returns matching results (tests wildcard search).
      */
-    public function testPartialSimilarMatchFound(): void
+    public function testPartialSimilarMatchFoundFront(): void
     {
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => substr(self::$VRM, 0, 8)],
+            'query' => ['vrm' => substr(self::$VRM, 0, 5)],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -136,14 +133,69 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
-                    'session_end' => (new \DateTimeImmutable(self::$TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                    'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
             ],
         ]);
     }
 
+    /**
+     * Test that a partial VRM search from the back returns matching results (tests wildcard search).
+     */
+    public function testPartialSimilarMatchFoundBack(): void
+    {
+        static::createClient()->request('GET', '/search', [
+            'query' => ['vrm' => substr(self::$VRM, 2, 9)],
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => self::$VRM,
+                    'time_in' => $this->TIME_IN,
+                    'session' => 'partial',
+                    'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Test partial lookup with a complete value input for lookup but only partial value stored.
+     */
+    public function testPartialVRMRecorded(): void
+    {
+        $fullVRM = 'ZZ 7689XY';
+        $partialVRM = substr($fullVRM, 2, 6);
+        $tenMinutesAgo = new \DateTimeImmutable('-10 minutes');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm($partialVRM);
+        $vehicle->setTimeIn($tenMinutesAgo);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['vrm' => $fullVRM],
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => $partialVRM,
+                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                ]
+            ],
+        ]);
+    }
+    
     /**
      * Test the same VRN, yesterday, is returned with a full session for yesterday and a partial session for today.
      */
@@ -168,7 +220,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
                 [
@@ -231,6 +283,14 @@ class VehicleSearchTest extends ApiTestCase
     {
         $yesterday = new \DateTimeImmutable('-1 day');
 
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm(self::$VRM);
+        $vehicle->setTimeIn($yesterday);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
         static::createClient()->request('GET', '/search', [
             'query' => ['vrm' => self::$VRM, 'datetime' => $yesterday->format('Y-m-d H:i:s')],
         ]);
@@ -240,7 +300,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
                 [
@@ -254,16 +314,15 @@ class VehicleSearchTest extends ApiTestCase
 
     /**
      * Test the same car, left and returned within the current window is included for both entrances with partial sessions.
-     * Remember, the car from the previous test still exists in the database.
      */
     public function testSameCarTwiceWithinWindow(): void
     {
-        $ten_minutes_ago = new \DateTimeImmutable('-10 minutes');
+        $tenMinutesAgo = new \DateTimeImmutable('-10 minutes');
 
         $entityManager = self::getContainer()->get('doctrine')->getManager();
         $vehicle = new Vehicle();
         $vehicle->setVrm(self::$VRM);
-        $vehicle->setTimeIn($ten_minutes_ago);
+        $vehicle->setTimeIn($tenMinutesAgo);
 
         $entityManager->persist($vehicle);
         $entityManager->flush();
@@ -272,23 +331,19 @@ class VehicleSearchTest extends ApiTestCase
             'query' => ['vrm' => self::$VRM],
         ]);
         $this->assertResponseStatusCodeSame(200);
-        $this->assertJsonContains(['message' => '3 results found.']);
+        $this->assertJsonContains(['message' => '2 results found.']);
         $this->assertJsonContains([
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
+                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
-                ],
-                [
-                    'vrm' => self::$VRM,
-                    'session' => 'full',
-                ],
+                ]
             ],
         ]);
     }
@@ -298,7 +353,23 @@ class VehicleSearchTest extends ApiTestCase
      */
     public function test48HourWindow(): void
     {
-        $ten_minutes_ago = new \DateTimeImmutable('-10 minutes');
+        
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        
+        $tenMinutesAgo = new \DateTimeImmutable('-10 minutes');
+        $vehicle = new Vehicle();
+        $vehicle->setVrm(self::$VRM);
+        $vehicle->setTimeIn($tenMinutesAgo);
+        $entityManager->persist($vehicle);
+
+        $yesterday = new \DateTimeImmutable('-1 day');
+        $vehicle2 = new Vehicle();
+        $vehicle2->setVrm(self::$VRM);
+        $vehicle2->setTimeIn($yesterday);
+
+        $entityManager->persist($vehicle2);
+
+        $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
             'query' => ['vrm' => self::$VRM, 'window' => 2880],
@@ -309,12 +380,12 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $ten_minutes_ago->format('Y-m-d H:i:s'),
+                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => self::$TIME_IN,
+                    'time_in' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
                 [
@@ -484,6 +555,16 @@ class VehicleSearchTest extends ApiTestCase
      */
     public function testDateFromAndDateTo(): void
     {
+        $yesterday = new \DateTimeImmutable('-1 day');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm(self::$VRM);
+        $vehicle->setTimeIn($yesterday);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
         $yesterday_start = new \DateTime('-1 day');
         $yesterday_start->setTime(0, 0, 0);
 
