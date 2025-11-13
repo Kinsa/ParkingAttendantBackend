@@ -626,5 +626,69 @@ class VehicleSearchTest extends ApiTestCase
             ],
         ]);
     }
+    
+    /**
+     * Test that setting a date range limits the results to the relevant vehicle.
+     */
+    public function testSpecificDateQueryWithDateRange(): void
+    {
+        $yesterday = new \DateTimeImmutable('-1 day');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm(self::$VRM);
+        $vehicle->setTimeIn($yesterday);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['vrm' => self::$VRM, 'datetime' => $yesterday->format('Y-m-d H:i:s'), 'query_from' => $yesterday->format('Y-m-d 00:00:00'), 'query_to' => $yesterday->format('Y-m-d 23:59:59')],
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => self::$VRM,
+                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
+                    'session' => 'partial',
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Test session value across days.
+     */
+    public function testSessionValueAcrossDays(): void
+    {
+        $timeIn = new \DateTimeImmutable('2025-11-11 23:00:00');
+        $now = new \DateTimeImmutable('2025-11-12 02:00:00');
+        $vrm = 'ASDF';
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm($vrm);
+        $vehicle->setTimeIn($timeIn);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', '/search', [
+            'query' => ['vrm' => $vrm, 'datetime' => $now->format('Y-m-d H:i:s')],
+        ]);
+        $this->assertResponseStatusCodeSame(200);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => $vrm,
+                    'time_in' => $timeIn->format('Y-m-d H:i:s'),
+                    'session' => 'full',
+                ],
+            ],
+        ]);
+    }
 
 }

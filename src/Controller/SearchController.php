@@ -74,7 +74,6 @@ class SearchController extends AbstractController
         } else {
             try {
                 $parkingWindow = new \DateInterval('PT'.$window.'M');
-                $latestSafeParkedTime = $calculateParkingSessionsFrom->sub($parkingWindow);
             } catch (\Exception $e) {
                 return self::returnInvalidWindowResponse();
             }
@@ -172,8 +171,8 @@ class SearchController extends AbstractController
                     $time_in_str = $time_in->format('Y-m-d H:i:s');
                     $session_end = $time_in->add($parkingWindow); // Adds parking window to time_in
 
-                    // Parking is expired if the expiration time is before the search window end
-                    $is_expired = $session_end < $latestSafeParkedTime;
+                    // Parking is expired if current time is past the session end time
+                    $is_expired = $calculateParkingSessionsFrom > $session_end;
 
                     $matches[$i] = [
                         'vrm' => $matches[$i]['vrm'],

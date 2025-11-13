@@ -94,26 +94,26 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 +----+----------+---------------------+
 | id | vrm      | time_in             |
 +----+----------+---------------------+
-|  1 | MA06 GLQ | 2025-11-11 19:46:00 |
-|  2 | MA25 KHT | 2025-11-11 04:23:00 |
-|  3 | MA15 BSL | 2025-11-11 19:55:00 |
-|  4 | MA04 TVZ | 2025-11-11 00:30:00 |
-|  5 | MA10 JPJ | 2025-11-11 23:23:00 |
-|  6 | MA93 GEG | 2025-11-11 05:32:00 |
-|  7 | MA16 GXX | 2025-11-11 15:49:00 |
-|  8 | MA94 TEJ | 2025-11-11 17:16:00 |
-|  9 | MA97 GRA | 2025-11-11 06:07:00 |
-| 10 | MA01 POV | 2025-11-11 07:28:00 |
-| 11 | MA04 OCM | 2025-11-11 06:45:00 |
-| 12 | MA06 MWU | 2025-11-11 10:25:00 |
-| 13 | MA22 MUZ | 2025-11-11 02:56:00 |
-| 14 | MA19 ZZW | 2025-11-11 11:25:00 |
-| 15 | MA90 AMH | 2025-11-11 15:37:00 |
-| 16 | MA94 IWT | 2025-11-11 22:11:00 |
-| 17 | MA13 NFV | 2025-11-11 12:07:00 |
 | 18 | MA10 VQY | 2025-11-11 00:29:00 |
-| 19 | MA97 PPO | 2025-11-11 15:56:00 |
+|  4 | MA04 TVZ | 2025-11-11 00:30:00 |
 | 20 | MA92 KKE | 2025-11-11 01:32:00 |
+| 13 | MA22 MUZ | 2025-11-11 02:56:00 |
+|  2 | MA25 KHT | 2025-11-11 04:23:00 |
+|  6 | MA93 GEG | 2025-11-11 05:32:00 |
+|  9 | MA97 GRA | 2025-11-11 06:07:00 |
+| 11 | MA04 OCM | 2025-11-11 06:45:00 |
+| 10 | MA01 POV | 2025-11-11 07:28:00 |
+| 12 | MA06 MWU | 2025-11-11 10:25:00 |
+| 14 | MA19 ZZW | 2025-11-11 11:25:00 |
+| 17 | MA13 NFV | 2025-11-11 12:07:00 |
+| 15 | MA90 AMH | 2025-11-11 15:37:00 |
+|  7 | MA16 GXX | 2025-11-11 15:49:00 |
+| 19 | MA97 PPO | 2025-11-11 15:56:00 |
+|  8 | MA94 TEJ | 2025-11-11 17:16:00 |
+|  1 | MA06 GLQ | 2025-11-11 19:46:00 |
+|  3 | MA15 BSL | 2025-11-11 19:55:00 |
+| 16 | MA94 IWT | 2025-11-11 22:11:00 |
+|  5 | MA10 JPJ | 2025-11-11 23:23:00 |
 +----+----------+---------------------+
 ```
 
@@ -156,17 +156,33 @@ As a traffic warden managing a lot with the default 2 hour parking window, I man
 
 The system uses the current date time and a 2 hour window as defaults, requiring a minimum of the VRM mark. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
 
+```
+GET http://parking.kinsacreative.com/search?vrm=MA19 ZZW
+```
+
 --
 
 As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The license plate is dirty and an 'O' looks like a '0'. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
 
 The system uses fuzzy matching to look up similar values. The response includes the VRM value captured for manual verification.
 
+```
+GET http://parking.kinsacreative.com/search?vrm=MA04 0CM
+```
+
+Plate stored in system: `MA04 OCM`
+
 --
 
 As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The driver entered at a weird angle in bad light and the camera only captured a partial. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
 
 The system uses wildcard matching to look up partial values. The response includes the VRM value captured for manual verification.
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA16 GXX
+```
+
+Plate stored in system: `16 GX` at 20:41:00
 
 --
 
@@ -175,6 +191,18 @@ As a traffic warden managing a lot with user-set parking session times, I want t
 I manually input a VRM mark into the system as well as the session duration the driver has paid for. 
 
 The system accepts a parameter for a custom parking window. 
+
+```
+http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-11 22:00:00
+```
+
+It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session expires at 22:15, they have a partial session.
+
+I come back around at 1am and recheck, the session should now be full:
+
+```
+http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-12 01:00:00
+```
 
 --
 
@@ -361,6 +389,10 @@ php bin/console doctrine:migrations:migrate
 - The scenario for partials didn't actually match my test: revised test and updated the query so that if a partial VRM is recorded and a full VRM is searched for, responses are returned
 - If tests are run out of order they fail: revised setup and tear down from class based to test based so each test can be run in isolation
 - AI assistance: Explained `LIKE` query order in/out, Directed AI agent that I wanted to change setupBeforeClass and tearDownAfterClass to do that for each test individually 
+
+### 11. Bugfix 
+- In testing the use cases against the database fixture I ran into an unexpected result. I was seeing a partial session when I was expecting to see a full session when comparing across days. Initially I thought this was an issue with date comparisons. A string instead of a datetime object. Reviewing the code though that wasn't it. I added a failing test case and working back and forth with AI debugged it to a bad comparison. When I refactored from the date range determining the window, I was checking if they had parked before the window began, AI suggested that what I should really be checking is if they were still there after the session ended.
+- AI assistance: debugging; suggested refactor
 
 ### Outstanding Items
 - [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)
