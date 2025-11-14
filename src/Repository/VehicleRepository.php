@@ -100,18 +100,16 @@ class VehicleRepository extends ServiceEntityRepository
     /**
      * @return [] Returns an array of Vehicle objects
      */
-    public function findByVrm(string $vrm, ?\DateTimeImmutable $datetime, ?\DateTimeImmutable $query_from, ?\DateTimeImmutable $query_to): ?array
+    public function findByVrm(string $vrm, \DateTimeImmutable $query_to, ?\DateTimeImmutable $query_from): ?array
     {
         $conn = $this->getEntityManager()->getConnection();
 
         $vrmPattern = $this->createFlexibleRegexPattern($vrm);
 
-        $datetime_str = $datetime->format('Y-m-d H:i:s');
-
         $query_from_str = $query_from ? $query_from->format('Y-m-d H:i:s') : '';
-        $query_to_str = $query_to ? $query_to->format('Y-m-d H:i:s') : '';
+        $query_to_str = $query_to->format('Y-m-d H:i:s');
 
-        $dateCondition = !empty($query_from_str) && !empty($query_to_str) ? ' AND v.time_in BETWEEN :query_from AND :query_to' : '';
+        $dateCondition = !empty($query_from_str) ? ' AND v.time_in BETWEEN :query_from AND :query_to' : 'AND v.time_in <= :query_to';
 
         $sql = <<<SQL
             SELECT DISTINCT * FROM (
@@ -119,7 +117,6 @@ class VehicleRepository extends ServiceEntityRepository
                     SELECT *, levenshtein(:vrm, v.vrm) AS distance
                     FROM vehicle v
                     WHERE v.vrm REGEXP :vrmPattern {$dateCondition}
-                    AND v.time_in <= :datetime
                 )
                 UNION ALL
                 (
@@ -127,21 +124,19 @@ class VehicleRepository extends ServiceEntityRepository
                     FROM vehicle v
                     WHERE levenshtein(:vrm, v.vrm) BETWEEN 0 AND 4 {$dateCondition}
                     AND CHAR_LENGTH(v.vrm) < 9
-                    AND v.time_in <= :datetime
                 )
             ) AS combined_results
-            ORDER BY time_in DESC
+            ORDER BY distance ASC, time_in DESC
         SQL;
 
         $queryParameters = [
             'vrm' => $vrm,
             'vrmPattern' => $vrmPattern,
-            'datetime' => $datetime_str,
+            'query_to' => $query_to_str,
         ];
 
-        if (!empty($query_from_str) && !empty($query_to_str)) {
+        if (!empty($query_from_str)) {
             $queryParameters['query_from'] = $query_from_str;
-            $queryParameters['query_to'] = $query_to_str;
         }
 
         $resultSet = $conn->executeQuery($sql, $queryParameters);

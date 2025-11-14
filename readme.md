@@ -10,11 +10,6 @@ Query vehicle parking records by VRM (Vehicle Registration Mark).
 - `vrm` (string) - Vehicle Registration Mark to search for
 
 #### Optional Parameters
-- `datetime` (string) - Reference datetime for session calculation
-  - Format: `YYYY-MM-DD HH:MM:SS`
-  - Default: Current time
-  - Example: `2024-11-13 14:30:00`
-
 - `window` (integer) - Parking duration window in minutes
   - Default: `120`
   - Must be a positive integer
@@ -24,12 +19,10 @@ Query vehicle parking records by VRM (Vehicle Registration Mark).
   - Must be provided together with `query_to`
   - Must be earlier than or equal to `query_to`
 
-- `query_to` (string) - Limit results to entries before this datetime
+- `query_to` (string) - Reference datetime for session calculation
   - Format: `YYYY-MM-DD HH:MM:SS`
-  - Must be provided together with `query_from`
-  - Must be later than or equal to `query_from`
-
-**Note:** When using `query_from` and `query_to`, the `datetime` parameter must fall within this range.
+  - Default: Current time
+  - Example: `2024-11-13 14:30:00`
 
 #### Example Requests
 
@@ -38,7 +31,7 @@ Query vehicle parking records by VRM (Vehicle Registration Mark).
 curl "http://localhost:8000/search?vrm=AB12CDE"
 
 # Search with custom datetime and window
-curl "http://localhost:8000/search?vrm=AB12CDE&datetime=2024-11-13 14:30:00&window=180"
+curl "http://localhost:8000/search?vrm=AB12CDE&query_to=2024-11-13 14:30:00&window=180"
 
 # Search within a specific time range
 curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&query_to=2024-11-13 16:00:00"
@@ -53,8 +46,8 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
   "results": [
     {
       "vrm": "AB12CDE",
-      "time_in": "2024-11-13 12:00:00",
       "session": "partial",
+      "session_start": "2024-11-13 12:00:00",
       "session_end": "2024-11-13 14:00:00"
     }
   ]
@@ -68,8 +61,8 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
   "results": [
     {
       "vrm": "AB12CDE",
-      "time_in": null,
       "session": "none",
+      "session_start": null,
       "session_end": null
     }
   ]
@@ -118,7 +111,99 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 +----+----------+---------------------+
 ```
 
-## Database
+## Use Cases
+
+As a traffic warden managing a lot with the default 2 hour parking window where clients pay when they enter, I manually input a VRM value into the system, I want to know if the vehicle's session has expired or not.
+
+The system uses the current date time and a 2 hour window as defaults, requiring a minimum input of the VRM. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
+
+I search for the vehicle with plate `MA19 ZZW`
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA19 ZZW
+```
+
+The response shows the vehicle has been logged in and it's session is expired
+
+But what if we queried it yesterday at 1pm?
+
+```shell
+GET http://parking.kinsacreative.com/search/?vrm=MA19 ZZW&query_to=2025-11-11 13:00:00
+```
+
+Now we see just the one result, and it is partial
+
+If there is an exact match for the VRM and the session is partial, just that unit is returned
+
+--
+
+As a traffic warden managing a lot with the default 2 hour parking window where clients pay when they enter, I manually input a VRM value into the system. The license plate is dirty. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
+
+The system uses fuzzy matching to look up similar values. The response includes the VRM value captured for manual verification.
+
+I search for the VRM value `MA06 GLO`. A bit of dirt on the O makes it look like a Q.
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA06 GLO
+```
+
+The response shows a match for `MA06 GLQ`. At this point numbers alone aren't enough for me to determine if this is the same car or not. 
+
+--
+
+As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The driver entered at a weird angle in bad light and the camera only captured a partial. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
+
+The system uses wildcard matching to look up partial values. The response includes the VRM value captured for manual verification.
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA16 GXX
+```
+
+The response shows a match for: `16 GX` at 20:41:00. I can see the same vehicle entered the lot at 15:49. Since the next most likely match also has a '6 G' but the numbers and letters immediately before and after aren't anywhere close to `1` or `X` I can be reasonably sure this is my car and ticket it.
+
+The API is a bit confusing in the response ordering here. The exact match is returned above the partial. One way to resolve this in the UI would be to notice that it has been at least 5 hours since the exact match and flag it as such while looping the output without a processing increase. We could factor it into the API and rank it down (session is full but session end is more than FOOx the parking window or some reasonable period of time).
+
+--
+
+As a traffic warden managing a lot with user-set parking session times, I want to know if the vehicle's session has expired or not. 
+
+I manually input a VRM value into the system as well as the session duration the driver has paid for. 
+
+The system accepts a parameter for a custom parking window. My system already knows what window the user paid for and updates the query automatically. I simply enter the VRM value
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300
+```
+
+(Using query_to to mock time moving in our scenario) It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session expires at 22:15, they have a partial session.
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300&query_to=2025-11-11 22:00:00
+```
+
+(Using query_to to mock time moving in our scenario) I come back around at 1am and recheck, the session should now be full:
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300&query_to=2025-11-12 01:00:00
+```
+
+--
+
+As a traffic warden managing a lot, a customer is challenging a ticket. I need to be able to query a specific date to see if the session was full or not.
+
+The system accepts a parameter for a custom date to query to. 
+
+I issued a ticket to MA93 GEG at 8am on 11/11. 
+
+Instead of checking now, I check as if it was 8am on 11/11 and see that MA93 GEG's session was full.
+
+```
+GET http://parking.kinsacreative.com/search?vrm=MA93 GEG&query_to=2025-11-11 08:00:00
+```
+
+--
+
+## Development Database
 
 Docker container running mariadb and phpMyAdmin.
 
@@ -131,7 +216,7 @@ docker-compose up -d
 Then open your browser to `http://localhost:8080` and log in with (defined in the `docker-compose.yml` file):
 
 - Email: admin@admin.com
-- Password: admin123 
+- Password: admin123
 
 To stop and remove the containers (preserving the data in the volume):
 
@@ -150,90 +235,6 @@ To just stop (to restart later):
 ```
 docker-compose stop
 ```
-
-## Use Cases
-
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM value into the system, I want to know if the vehicle's session has expired or not.
-
-The system uses the current date time and a 2 hour window as defaults, requiring a minimum input of the VRM. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
-
-I search for the vehicle with plate `MA19 ZZW`
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA19 ZZW
-```
-
-The response shows the vehicle has been logged in and it's session is expired
-
---
-
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM value into the system. The license plate is dirty. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
-
-The system uses fuzzy matching to look up similar values. The response includes the VRM value captured for manual verification.
-
-I search for the VRM value `MA06 GLO`. A bit of dirt on the O makes it look like a Q.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA06 GLO
-```
-
-The response shows a match for `MA06 GLQ`. At this point numbers alone aren't enough for me to determine if this is the same car or not.
-
---
-
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The driver entered at a weird angle in bad light and the camera only captured a partial. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
-
-The system uses wildcard matching to look up partial values. The response includes the VRM value captured for manual verification.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA16 GXX
-```
-
-The response shows a match for: `16 GX` at 20:41:00. I can see the same vehicle entered the lot at 15:49. At this point numbers alone aren't enough for me to determine if this is the same car or not.
-
---
-
-As a traffic warden managing a lot with user-set parking session times, I want to know if the vehicle's session has expired or not. 
-
-I manually input a VRM value into the system as well as the session duration the driver has paid for. 
-
-The system accepts a parameter for a custom parking window. My system already knows what window the user paid for and updates the query automatically. I simply enter the VRM value
-
-```
-GET http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-11 22:00:00
-```
-
-It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session expires at 22:15, they have a partial session.
-
-I come back around at 1am and recheck, the session should now be full:
-
-```
-GET http://parking.kinsacreative.com/search?window=300&vrm=MA94 TEJ&datetime=2025-11-12 01:00:00
-```
-
---
-
-As a traffic warden managing a lot, a customer is challenging a ticket. I need to be able to query a specific date to see if the session was full or not.
-
-The system accepts a parameter for a custom datetime. 
-
-I issued a ticket to MA93 GEG at 8am on 11/11. 
-
-```
-GET http://parking.kinsacreative.com/search?datetime=2025-11-11 08:00:00&vrm=MA93 GEG
-```
-
-Instead of checking now, I check as if it was 8am on 11/11 and see that MA93 GEG's session was full.
-
-That result is a bit confusing though, there are ten matches. I add parameters to limit the timeframe to a narrower window. Since I know the ticket was expired at 8, I set that as the upper limit and set the lower limit to midnight.
-
-```
-GET http://parking.kinsacreative.com/search?query_from=2025-11-11 00:00:00&query_to=2025-11-11 08:00:00&datetime=2025-11-11 08:00:00&vrm=MA93 GEG
-```
-
-That's better, now there are three results to pick through instead of three. 
-
---
 
 ## Symfony
 
@@ -410,11 +411,11 @@ php bin/console doctrine:migrations:migrate
 ### 10. Partials and Test Refactoring (`0334baf2`, `0266ce5`)
 - Added use cases to readme as full scenarios
 - The scenario for partials didn't actually match my test: revised test and updated the query so that if a partial VRM is recorded and a full VRM is searched for, responses are returned
-- If tests are run out of order they fail: revised setup and tear down from class based to test based so each test can be run in isolation
+- If tests are run out of order, they fail: revised setup and tear down from class based to test based so each test can be run in isolation
 - AI assistance: Explained `LIKE` query order in/out, Directed AI agent that I wanted to change setupBeforeClass and tearDownAfterClass to do that for each test individually 
 
 ### 11. Bugfix 
-- In testing the use cases against the database fixture I ran into an unexpected result. I was seeing a partial session when I was expecting to see a full session when comparing across days. Initially I thought this was an issue with date comparisons. A string instead of a datetime object. Reviewing the code though that wasn't it. I added a failing test case and working back and forth with AI debugged it to a bad comparison. When I refactored from the date range determining the window, I was checking if they had parked before the window began, AI suggested that what I should really be checking is if they were still there after the session ended.
+- In testing the use cases against the database fixture, I ran into an unexpected result. I was seeing a partial session when I was expecting to see a full session when comparing across days. Initially I thought this was an issue with date comparisons. A string instead of a datetime object. Reviewing the code though that wasn't it. I added a failing test case and working back and forth with AI debugged it to a bad comparison. When I refactored from the date range determining the window, I was checking if they had parked before the window began, AI suggested that what I should really be checking is if they were still there after the session ended.
 - AI assistance: debugging; suggested refactor
 
 ### 12. Levenshtein distance (`1c30b35f`)
@@ -422,17 +423,18 @@ php bin/console doctrine:migrations:migrate
 
 ### 13. Regex matching (`10d5de0f`, ``)
 - To get around the issue of too many responses with the Levenshtein method, replaced it with an exact match with pattern recognition and then Levenshtein for any entries less than 9 digits using where clause; remove distance in response
-- Remove wildcard support and related tests - I had this backwards to the scenario - unless we are using OCR for issuing tickets as well in which case it is still valid
+- Remove wildcard support and related tests—I had this backwards to the scenario - unless we are using OCR for issuing tickets as well in which case it is still valid
 - My initial strategy for regex was to use REPLACE to chain multiple REGEX matches, referencing https://www.devart.com/dbforge/mysql/studio/mysql-replace.html#:~:text=The%20REPLACE()%20function%20in,records%20with%20just%20one%20command, https://www.datacamp.com/doc/mysql/mysql-regexp, and https://stackoverflow.com/questions/5460364/mysql-multiple-replace-query
-- AI assistance: Asked "I have a database of vehicle registration marks captured by camera and processed by software so the value is stored. Sometimes the software mistakes an O for a 0 or Q or any combination there of or an 8 for a B or an I and a 1. The data is stored in MySQL and I am querying it with PHP. How can I most efficiently write a query that replaces the confusing characters with a regex that allows for the other possibilities." That got me to the code at `10d5de0f` which used PHP str_replace to build things out. Easy enough but the regex didn't work, it was modifying as it went so the loop was trying to change replacements already made. 
+- AI assistance: Asked, "I have a database of vehicle registration marks captured by camera and processed by software so the value is stored. Sometimes the software mistakes an O for a 0 or Q or any combination there of or an 8 for a B or an I and a 1. The data is stored in MySQL and I am querying it with PHP. How can I most efficiently write a query that replaces the confusing characters with a regex that allows for the other possibilities." That got me to the code at `10d5de0f` which used PHP str_replace to build things out. Easy enough but the regex didn't work, it was modifying as it went so the loop was trying to change replacements already made. 
 - AI assistance: How to get around the nested replacement issue? Two passes: one to replace the exact char with a really specific placeholder that won't exist in the code, then replace that with the regex pattern. At the same time it spotted some other issues in the code - case, the way spaces were being handled in the regex, and passing query_from and query_to along when we weren't using them
-- AI assistance: With that change I had 3 failing tests - two of those had to do with wildcard support and one with a character change of 4 to A. When adding 4/A to the pattern resulted in all the tests failing, I had to dig in again. AI suggested I was getting too many matches - the opposite of what I was seeing - but also suggested that I was making up confusions - OCR doesn't often confuse A and 4. https://communityhistoryarchives.com/100-common-ocr-letter-misinterpretations/ disagrees but there's no date on that or reference to the specific processing being used, and to really know we'd have to test our own OCR reader. AI also broke down the number of Levenshtein steps from 4 to A as just 1 so we could tune when we want to use Levenshtein to address the problem if we wanted.
+- AI assistance: With that change I had 3 failing tests—two of those had to do with wildcard support and one with a character change of 4 to A. When adding 4/A to the pattern resulted in all the tests failing, I had to dig in again. AI suggested I was getting too many matches - the opposite of what I was seeing - but also suggested that I was making up confusions—OCR doesn't often confuse A and 4. https://communityhistoryarchives.com/100-common-ocr-letter-misinterpretations/ disagrees but there's no date on that or reference to the specific processing being used, and to really know we'd have to test our own OCR reader. AI also broke down the number of Levenshtein steps from 4 to A as just 1 so we could tune when we want to use Levenshtein to address the problem if we wanted.
 - I'm actually getting more results now with the regex pattern substitution.
 
 ### 14. Address too many results
 - If there is an exact match and the session is partial, return immediately instead of returning the full result set
-- This creates its own issue though as seen in `testSameCarTwiceWithinWindow()` where you can cheat the session by leaving and coming back before the session is over
+- Simplify the query—remove datetime and leave query_from and query_to
+- Revised the results to order by Levenshtein distance
+- AI assistance: I did this yesterday but didn't get the sequence right. After digging around in Git logs I got close but not quite. I provided the SQL query to AI and asked it to correct the query.  
 
 ### Outstanding Items
-- [ ] Now not handling `testSameCarTwiceWithinWindow()` - need to collect open sessions, find the earliest one, and determine partial or full based on that
 - [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)

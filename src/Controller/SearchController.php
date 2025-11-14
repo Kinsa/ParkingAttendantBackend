@@ -48,22 +48,21 @@ class SearchController extends AbstractController
     public function search(
         LoggerInterface $logger,
         #[MapQueryParameter] string $vrm = '',
-        #[MapQueryParameter] string $datetime = '',
         #[MapQueryParameter] string $window = '120',
         #[MapQueryParameter] string $query_from = '',
         #[MapQueryParameter] string $query_to = '',
     ): JsonResponse {
         // Set default values for date parameters if not provided
-        if (empty($datetime)) {
+        if (empty($query_to)) {
             $calculateParkingSessionsFrom = new \DateTimeImmutable('now');
         } else {
-            if (!self::isValidDateTime($datetime)) {
-                return self::returnInvalidDateResponse('datetime');
+            if (!self::isValidDateTime($query_to)) {
+                return self::returnInvalidDateResponse('query_to');
             } else {
                 try {
-                    $calculateParkingSessionsFrom = new \DateTimeImmutable($datetime);
+                    $calculateParkingSessionsFrom = new \DateTimeImmutable($query_to);
                 } catch (\Exception $e) {
-                    return self::returnInvalidDateResponse('datetime');
+                    return self::returnInvalidDateResponse('query_to');
                 }
             }
         }
@@ -94,51 +93,20 @@ class SearchController extends AbstractController
             }
         }
 
-        if (empty($query_to)) {
-            $query_to_dt = null;
-        } else {
-            if (!self::isValidDateTime($query_to)) {
-                return self::returnInvalidDateResponse('query_to');
-            } else {
-                try {
-                    $query_to_dt = new \DateTimeImmutable($query_to);
-                } catch (\Exception $e) {
-                    return self::returnInvalidDateResponse('query_to');
-                }
-            }
-        }
-
-        if (isset($query_from_dt) && !isset($query_to_dt) || !isset($query_from_dt) && isset($query_to_dt)) {
-            $response = new JsonResponse();
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            $response->setData(['message' => 'Both query_from and query_to must be provided together.']);
-
-            return $response;
-        }
-
-        if ($query_from_dt && $query_to_dt && $query_from_dt > $query_to_dt) {
-            $response = new JsonResponse();
+        $response = new JsonResponse();
+        if ($query_from_dt && $query_from_dt > $calculateParkingSessionsFrom) {
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             $response->setData(['message' => 'query_from must be earlier than or equal to query_to.']);
 
             return $response;
         }
 
-        if ($query_from_dt && $query_to_dt && ($calculateParkingSessionsFrom < $query_from_dt || $calculateParkingSessionsFrom > $query_to_dt)) {
-            $response = new JsonResponse();
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            $response->setData(['message' => 'datetime must be later than or equal to query_from and earlier than or equal to query_to.']);
-
-            return $response;
-        }
-
         // create a new Response object
-        $response = new JsonResponse();
 
         $vehicleRepository = $this->doctrine;
 
         if (!empty($vrm)) {
-            $searchResultQueryResponse = $vehicleRepository->findByVrm($vrm, $calculateParkingSessionsFrom, $query_from_dt, $query_to_dt);
+            $searchResultQueryResponse = $vehicleRepository->findByVrm($vrm, $calculateParkingSessionsFrom, $query_from_dt);
             $response->setStatusCode(Response::HTTP_OK);
             if (empty($searchResultQueryResponse)) {
                 $response->setData([
@@ -180,6 +148,7 @@ class SearchController extends AbstractController
                             'session' => $isExpired ? 'full' : 'partial',
                             'session_start' => $time_in_str,
                             'session_end' => $session_end->format('Y-m-d H:i:s'),
+                            'distance' => $searchResultQueryResponse[$i]['distance'],
                         ]];
                         break;
                     } else {
@@ -188,6 +157,7 @@ class SearchController extends AbstractController
                             'session' => $isExpired ? 'full' : 'partial',
                             'session_start' => $time_in_str,
                             'session_end' => $session_end->format('Y-m-d H:i:s'),
+                            'distance' => $searchResultQueryResponse[$i]['distance'],
                         ];
                     }
                 }

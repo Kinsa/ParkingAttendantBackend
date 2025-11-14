@@ -217,50 +217,6 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test a bad datetime query.
-     */
-    public function testBadSpecificDateQuery(): void
-    {
-        static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'datetime' => 'xylophone'],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
-        ]);
-    }
-
-    /**
-     * Test a partial datetime query.
-     */
-    public function testPartialSpecificDateQuery(): void
-    {
-        $yesterday = new \DateTimeImmutable('-1 day');
-
-        static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'datetime' => $yesterday->format('Y-m-d')],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
-        ]);
-    }
-
-    /**
-     * Test datetime query with a correctly formatted but invalid date.
-     */
-    public function testSpecificDateQueryWithBadDate(): void
-    {
-        static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'datetime' => '2025-02-30 12:00:00'],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'Invalid datetime format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
-        ]);
-    }
-
-    /**
      * Test the same VRM, yesterday, when queried with yesterday's date.
      */
     public function testSpecificDateQuery(): void
@@ -276,7 +232,7 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'datetime' => $yesterday->format('Y-m-d H:i:s')],
+            'query' => ['vrm' => self::$VRM, 'query_to' => $yesterday->format('Y-m-d H:i:s')],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -376,32 +332,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test both query_from and query_to must be provided together.
-     */
-    public function testQueryFromWithoutQueryTo(): void
-    {
-        static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'query_from' => '2024-01-01 00:00:00'],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'Both query_from and query_to must be provided together.',
-        ]);
-    }
-
-    public function testQueryToWithoutQueryFrom(): void
-    {
-        static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'query_to' => '2024-01-02 00:00:00'],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'Both query_from and query_to must be provided together.',
-        ]);
-    }
-
-    /**
-     * Test query_from must be earlier than or equal to query to.
+     * Test query_from must be earlier than or equal to query_to.
      */
     public function testQueryFromLaterThanQueryTo(): void
     {
@@ -410,7 +341,6 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => '2024-01-03 00:00:00',
                 'query_to' => '2024-01-02 00:00:00',
-                'datetime' => '2024-01-01 12:00:00',
             ],
         ]);
         $this->assertResponseStatusCodeSame(400);
@@ -429,7 +359,6 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => 'not-a-date',
                 'query_to' => '2024-01-02 00:00:00',
-                'datetime' => '2024-01-01 12:00:00',
             ],
         ]);
         $this->assertResponseStatusCodeSame(400);
@@ -448,7 +377,6 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => '2024-01-01 00:00:00',
                 'query_to' => 'not-a-date',
-                'datetime' => '2024-01-15 12:00:00',
             ],
         ]);
         $this->assertResponseStatusCodeSame(400);
@@ -467,7 +395,6 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => '2023-12-32 00:00:00',
                 'query_to' => '2024-01-02 00:00:00',
-                'datetime' => '2024-01-01 12:00:00',
             ],
         ]);
         $this->assertResponseStatusCodeSame(400);
@@ -486,31 +413,11 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => '2024-01-01 00:00:00',
                 'query_to' => '2024-02-30 00:00:00',
-                'datetime' => '2024-01-15 12:00:00',
             ],
         ]);
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains([
             'message' => 'Invalid query_to format or invalid date/time values. Use YYYY-MM-DD HH:MM:SS with valid dates.',
-        ]);
-    }
-
-    /**
-     * Test valid date_from and date_to but datetime outside the range between them.
-     * Using current datetime as 'now' for this test.
-     */
-    public function testQueryFromWindowDoesNotIncludeDatetime(): void
-    {
-        static::createClient()->request('GET', '/search', [
-            'query' => [
-                'vrm' => self::$VRM,
-                'query_from' => '2024-01-01 00:00:00',
-                'query_to' => '2024-02-20 00:00:00',
-            ],
-        ]);
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertJsonContains([
-            'message' => 'datetime must be later than or equal to query_from and earlier than or equal to query_to.',
         ]);
     }
 
@@ -540,7 +447,6 @@ class VehicleSearchTest extends ApiTestCase
                 'vrm' => self::$VRM,
                 'query_from' => $yesterday_start->format('Y-m-d H:i:s'),
                 'query_to' => $yesterday_end->format('Y-m-d H:i:s'),
-                'datetime' => $yesterday_end->format('Y-m-d H:i:s'),
             ],
         ]);
         $this->assertResponseStatusCodeSame(200);
@@ -571,7 +477,11 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => self::$VRM, 'datetime' => $yesterday->format('Y-m-d H:i:s'), 'query_from' => $yesterday->format('Y-m-d 00:00:00'), 'query_to' => $yesterday->format('Y-m-d 23:59:59')],
+            'query' => [
+                'vrm' => self::$VRM,
+                'query_from' => $yesterday->format('Y-m-d 00:00:00'),
+                'query_to' => $yesterday->format('Y-m-d H:i:s'),
+            ],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
@@ -604,7 +514,7 @@ class VehicleSearchTest extends ApiTestCase
         $entityManager->flush();
 
         static::createClient()->request('GET', '/search', [
-            'query' => ['vrm' => $vrm, 'datetime' => $now->format('Y-m-d H:i:s')],
+            'query' => ['vrm' => $vrm, 'query_to' => $now->format('Y-m-d H:i:s')],
         ]);
         $this->assertResponseStatusCodeSame(200);
         $this->assertJsonContains(['message' => '1 result found.']);
