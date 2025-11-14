@@ -1,4 +1,4 @@
-This project contains a means of tracking vehicle entries into a parking lot and assessing whether they have overstayed their session.
+_This project contains a means of tracking vehicle entries into a parking lot and assessing whether they have overstayed their session.
 
 ## API Documentation
 
@@ -76,6 +76,8 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 }
 ```
 
+**Note:** If there is an exact match for the VRM and the session is partial, just that result is returned.
+
 #### Session Status Values
 - `partial` - Vehicle is currently within the parking window
 - `full` - Vehicle's parking session has expired
@@ -113,95 +115,7 @@ curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&qu
 
 ## Use Cases
 
-As a traffic warden managing a lot with the default 2 hour parking window where clients pay when they enter, I manually input a VRM value into the system, I want to know if the vehicle's session has expired or not.
-
-The system uses the current date time and a 2 hour window as defaults, requiring a minimum input of the VRM. The response indicates if the session is expired ('full') or if no match can be found ('none') or if the session is still open ('partial').
-
-I search for the vehicle with plate `MA19 ZZW`
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA19 ZZW
-```
-
-The response shows the vehicle has been logged in and it's session is expired
-
-But what if we queried it yesterday at 1pm?
-
-```shell
-GET http://parking.kinsacreative.com/search/?vrm=MA19 ZZW&query_to=2025-11-11 13:00:00
-```
-
-Now we see just the one result, and it is partial
-
-If there is an exact match for the VRM and the session is partial, just that unit is returned
-
---
-
-As a traffic warden managing a lot with the default 2 hour parking window where clients pay when they enter, I manually input a VRM value into the system. The license plate is dirty. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
-
-The system uses fuzzy matching to look up similar values. The response includes the VRM value captured for manual verification.
-
-I search for the VRM value `MA06 GLO`. A bit of dirt on the O makes it look like a Q.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA06 GLO
-```
-
-The response shows a match for `MA06 GLQ`. At this point numbers alone aren't enough for me to determine if this is the same car or not. 
-
---
-
-As a traffic warden managing a lot with the default 2 hour parking window, I manually input a VRM mark into the system. The driver entered at a weird angle in bad light and the camera only captured a partial. I want to know if the vehicle's session has expired or not and wish to manually verify the plate.
-
-The system uses wildcard matching to look up partial values. The response includes the VRM value captured for manual verification.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA16 GXX
-```
-
-The response shows a match for: `16 GX` at 20:41:00. I can see the same vehicle entered the lot at 15:49. Since the next most likely match also has a '6 G' but the numbers and letters immediately before and after aren't anywhere close to `1` or `X` I can be reasonably sure this is my car and ticket it.
-
-The API is a bit confusing in the response ordering here. The exact match is returned above the partial. One way to resolve this in the UI would be to notice that it has been at least 5 hours since the exact match and flag it as such while looping the output without a processing increase. We could factor it into the API and rank it down (session is full but session end is more than FOOx the parking window or some reasonable period of time).
-
---
-
-As a traffic warden managing a lot with user-set parking session times, I want to know if the vehicle's session has expired or not. 
-
-I manually input a VRM value into the system as well as the session duration the driver has paid for. 
-
-The system accepts a parameter for a custom parking window. My system already knows what window the user paid for and updates the query automatically. I simply enter the VRM value
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300
-```
-
-(Using query_to to mock time moving in our scenario) It is currently 22:00 on 11/11/2025; MA94 TEJ parked at 17:16, their session expires at 22:15, they have a partial session.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300&query_to=2025-11-11 22:00:00
-```
-
-(Using query_to to mock time moving in our scenario) I come back around at 1am and recheck, the session should now be full:
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA94 TEJ&window=300&query_to=2025-11-12 01:00:00
-```
-
---
-
-As a traffic warden managing a lot, a customer is challenging a ticket. I need to be able to query a specific date to see if the session was full or not.
-
-The system accepts a parameter for a custom date to query to. 
-
-I issued a ticket to MA93 GEG at 8am on 11/11. 
-
-Instead of checking now, I check as if it was 8am on 11/11 and see that MA93 GEG's session was full.
-
-```
-GET http://parking.kinsacreative.com/search?vrm=MA93 GEG&query_to=2025-11-11 08:00:00
-```
-
---
+There are a series of use case scenarios which [are described and can be run in Postman](https://kinsacreative-9361599.postman.co/workspace/Kinsa-Creative's-Workspace~0b9e49cf-f915-49e3-833c-f71cae8edbe0/collection/49907170-7408272b-c732-468f-8f25-6613326e2065?action=share&creator=49907170).
 
 ## Development Database
 
