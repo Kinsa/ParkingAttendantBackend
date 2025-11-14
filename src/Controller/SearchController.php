@@ -138,9 +138,9 @@ class SearchController extends AbstractController
         $vehicleRepository = $this->doctrine;
 
         if (!empty($vrm)) {
-            $matches = $vehicleRepository->findByVrm($vrm, $query_from_dt, $query_to_dt);
+            $searchResultQueryResponse = $vehicleRepository->findByVrm($vrm, $query_from_dt, $query_to_dt);
             $response->setStatusCode(Response::HTTP_OK);
-            if (empty($matches)) {
+            if (empty($searchResultQueryResponse)) {
                 $response->setData([
                     'message' => 'No matches for VRM found.',
                     'results' => [
@@ -153,17 +153,15 @@ class SearchController extends AbstractController
                     ],
                 ]);
             } else {
-                $message = count($matches).' ';
-                $message .= 1 === count($matches) ? 'result' : 'results';
-                $message .= ' found.';
+                $searchResultArray = [];
 
-                for ($i = 0; $i < count($matches); ++$i) {
+                for ($i = 0; $i < count($searchResultQueryResponse); ++$i) {
                     try {
-                        $time_in = new \DateTimeImmutable($matches[$i]['time_in']);
+                        $time_in = new \DateTimeImmutable($searchResultQueryResponse[$i]['time_in']);
                     } catch (\Exception $e) {
                         $logger->critical('Error parsing time_in value', [
-                            'time_in_value' => $matches[$i]['time_in'],
-                            'entry_id' => $matches[$i]['id'],
+                            'time_in_value' => $searchResultQueryResponse[$i]['time_in'],
+                            'entry_id' => $searchResultQueryResponse[$i]['id'],
                             'error' => $e->getMessage(),
                             'exception_class' => get_class($e),
                         ]);
@@ -173,28 +171,32 @@ class SearchController extends AbstractController
                     $session_end = $time_in->add($parkingWindow); // Adds parking window to time_in
 
                     // Parking is expired if current time is past the session end time
-                    $is_expired = $calculateParkingSessionsFrom > $session_end;
+                    $isExpired = $calculateParkingSessionsFrom > $session_end;
 
-                    if (!$is_expired && $matches[$i]['vrm'] === $vrm) {
+                    if (!$isExpired && $searchResultQueryResponse[$i]['vrm'] === $vrm) {
                         // If we have a partial session and an exact VRM match, return only the single result
-                        $message = '1 result found.';
-                        $matches = [[
-                            'vrm' => $matches[$i]['vrm'],
-                            'session' => $is_expired ? 'full' : 'partial',
+                        $searchResultArray = [[
+                            'vrm' => $searchResultQueryResponse[$i]['vrm'],
+                            'session' => $isExpired ? 'full' : 'partial',
                             'session_start' => $time_in_str,
                             'session_end' => $session_end->format('Y-m-d H:i:s'),
                         ]];
                         break;
                     } else {
-                        $matches[$i] = [
-                            'vrm' => $matches[$i]['vrm'],
-                            'session' => $is_expired ? 'full' : 'partial',
+                        $searchResultArray[$i] = [
+                            'vrm' => $searchResultQueryResponse[$i]['vrm'],
+                            'session' => $isExpired ? 'full' : 'partial',
                             'session_start' => $time_in_str,
                             'session_end' => $session_end->format('Y-m-d H:i:s'),
                         ];
                     }
                 }
-                $response->setData(['message' => $message, 'results' => $matches]);
+
+                $message = count($searchResultArray).' ';
+                $message .= 1 === count($searchResultArray) ? 'result' : 'results';
+                $message .= ' found.';
+
+                $response->setData(['message' => $message, 'results' => $searchResultArray]);
             }
         } else {
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
