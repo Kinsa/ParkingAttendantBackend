@@ -1,6 +1,6 @@
 # Parking Attendant
 
-This project contains a means of tracking vehicle entries into a parking lot and assessing whether they have overstayed their session.
+This project demonstrates an API interface for querying vehicle entries into a parking lot and assessing whether they have overstayed their session.
 
 ## Example Use Cases
 
