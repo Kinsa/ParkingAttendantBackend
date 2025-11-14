@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Annotation\Route;
 
-class SearchController extends AbstractController
+class ApiController extends AbstractController
 {
     public function __construct(private VehicleRepository $doctrine)
     {
@@ -44,8 +44,8 @@ class SearchController extends AbstractController
         return $response;
     }
 
-    #[Route('/search', name: 'search')]
-    public function search(
+    #[Route('/api/search', name: 'api_search')]
+    public function api(
         LoggerInterface $logger,
         #[MapQueryParameter] string $vrm = '',
         #[MapQueryParameter] string $window = '120',

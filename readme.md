@@ -2,7 +2,7 @@ _This project contains a means of tracking vehicle entries into a parking lot an
 
 ## API Documentation
 
-### GET /search
+### GET /api
 
 Query vehicle parking records by VRM (Vehicle Registration Mark).
 
@@ -28,13 +28,13 @@ Query vehicle parking records by VRM (Vehicle Registration Mark).
 
 ```bash
 # Basic search
-curl "http://localhost:8000/search?vrm=AB12CDE"
+curl "http://localhost:8000/api?vrm=AB12CDE"
 
 # Search with custom datetime and window
-curl "http://localhost:8000/search?vrm=AB12CDE&query_to=2024-11-13 14:30:00&window=180"
+curl "http://localhost:8000/api?vrm=AB12CDE&query_to=2024-11-13 14:30:00&window=180"
 
 # Search within a specific time range
-curl "http://localhost:8000/search?vrm=AB12CDE&query_from=2024-11-13 10:00:00&query_to=2024-11-13 16:00:00"
+curl "http://localhost:8000/api?vrm=AB12CDE&query_from=2024-11-13 10:00:00&query_to=2024-11-13 16:00:00"
 ```
 
 #### Response Format
