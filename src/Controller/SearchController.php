@@ -146,8 +146,8 @@ class SearchController extends AbstractController
                     'results' => [
                         [
                             'vrm' => $vrm,
-                            'time_in' => null,
                             'session' => 'none',
+                            'session_start' => null,
                             'session_end' => null,
                         ],
                     ],
@@ -156,6 +156,7 @@ class SearchController extends AbstractController
                 $message = count($matches).' ';
                 $message .= 1 === count($matches) ? 'result' : 'results';
                 $message .= ' found.';
+
                 for ($i = 0; $i < count($matches); ++$i) {
                     try {
                         $time_in = new \DateTimeImmutable($matches[$i]['time_in']);
@@ -174,12 +175,24 @@ class SearchController extends AbstractController
                     // Parking is expired if current time is past the session end time
                     $is_expired = $calculateParkingSessionsFrom > $session_end;
 
-                    $matches[$i] = [
-                        'vrm' => $matches[$i]['vrm'],
-                        'time_in' => $time_in_str,
-                        'session' => $is_expired ? 'full' : 'partial',
-                        'session_end' => $session_end->format('Y-m-d H:i:s'),
-                    ];
+                    if (!$is_expired && $matches[$i]['vrm'] === $vrm) {
+                        // If we have a partial session and an exact VRM match, return only the single result
+                        $message = '1 result found.';
+                        $matches = [[
+                            'vrm' => $matches[$i]['vrm'],
+                            'session' => $is_expired ? 'full' : 'partial',
+                            'session_start' => $time_in_str,
+                            'session_end' => $session_end->format('Y-m-d H:i:s'),
+                        ]];
+                        break;
+                    } else {
+                        $matches[$i] = [
+                            'vrm' => $matches[$i]['vrm'],
+                            'session' => $is_expired ? 'full' : 'partial',
+                            'session_start' => $time_in_str,
+                            'session_end' => $session_end->format('Y-m-d H:i:s'),
+                        ];
+                    }
                 }
                 $response->setData(['message' => $message, 'results' => $matches]);
             }

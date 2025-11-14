@@ -67,7 +67,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => 'BATH',
-                    'time_in' => null,
+                    'session_start' => null,
                     'session' => 'none',
                     'session_end' => null,
                 ],
@@ -89,7 +89,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
                     'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
@@ -111,7 +111,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
                     'session_end' => (new \DateTimeImmutable($this->TIME_IN))->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'),
                 ],
@@ -145,7 +145,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => $partialVRM,
-                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session_start' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
             ],
@@ -178,7 +178,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => $partialVRM,
-                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session_start' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
             ],
@@ -186,7 +186,7 @@ class VehicleSearchTest extends ApiTestCase
     }
 
     /**
-     * Test the same VRM, yesterday, is returned with a full session for yesterday and a partial session for today.
+     * If the same car was in the lot yesterday, that session should be excluded from results when there is a partial session.
      */
     public function testSameCarOutsideOfTimeframeIsExcluded(): void
     {
@@ -209,14 +209,9 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
-                ],
-                [
-                    'vrm' => self::$VRM,
-                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
-                    'session' => 'full',
-                ],
+                ]
             ],
         ]);
     }
@@ -289,12 +284,12 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
+                    'session_start' => $yesterday->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
             ],
@@ -325,12 +320,12 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session_start' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
             ],
@@ -368,12 +363,12 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $tenMinutesAgo->format('Y-m-d H:i:s'),
+                    'session_start' => $tenMinutesAgo->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $this->TIME_IN,
+                    'session_start' => $this->TIME_IN,
                     'session' => 'partial',
                 ],
                 [
@@ -603,7 +598,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => self::$VRM,
-                    'time_in' => $yesterday->format('Y-m-d H:i:s'),
+                    'session_start' => $yesterday->format('Y-m-d H:i:s'),
                     'session' => 'partial',
                 ],
             ],
@@ -636,7 +631,7 @@ class VehicleSearchTest extends ApiTestCase
             'results' => [
                 [
                     'vrm' => $vrm,
-                    'time_in' => $timeIn->format('Y-m-d H:i:s'),
+                    'session_start' => $timeIn->format('Y-m-d H:i:s'),
                     'session' => 'full',
                 ],
             ],

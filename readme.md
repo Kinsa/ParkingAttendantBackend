@@ -420,7 +420,7 @@ php bin/console doctrine:migrations:migrate
 ### 12. Levenshtein distance (`1c30b35f`)
 - In testing the use cases against the database fixture, I discovered that `SOUNDS LIKE`, as the name implies, is auditory. Q and O don't sound anything like each other but a bit of mud on an O makes it a Q, or vice versa. I found https://lucidar.me/en/web-dev/levenshtein-distance-in-mysql/ and added the levenshtein function to my database. I then refactored the SQL query to utilise that instead of `SOUNDS LIKE`. This allowed me to enable the `testSimilarPartialVRMRecorded()` test which now passes. With a distance of 4, all tests passed, but the results were too dissimilar. I limited it to 3 which required me to disable the test that swapped an 8 and a B. Further tuning might be in order and likely regex matching (O/0, I/1, O/Q, B/8, etc.). It also returns too many responses with the right response sometimes buried.
 
-### 13. Refex matching (`10d5de0f`, ``)
+### 13. Regex matching (`10d5de0f`, ``)
 - To get around the issue of too many responses with the Levenshtein method, replaced it with an exact match with pattern recognition and then Levenshtein for any entries less than 9 digits using where clause; remove distance in response
 - Remove wildcard support and related tests - I had this backwards to the scenario - unless we are using OCR for issuing tickets as well in which case it is still valid
 - My initial strategy for regex was to use REPLACE to chain multiple REGEX matches, referencing https://www.devart.com/dbforge/mysql/studio/mysql-replace.html#:~:text=The%20REPLACE()%20function%20in,records%20with%20just%20one%20command, https://www.datacamp.com/doc/mysql/mysql-regexp, and https://stackoverflow.com/questions/5460364/mysql-multiple-replace-query
@@ -429,7 +429,10 @@ php bin/console doctrine:migrations:migrate
 - AI assistance: With that change I had 3 failing tests - two of those had to do with wildcard support and one with a character change of 4 to A. When adding 4/A to the pattern resulted in all the tests failing, I had to dig in again. AI suggested I was getting too many matches - the opposite of what I was seeing - but also suggested that I was making up confusions - OCR doesn't often confuse A and 4. https://communityhistoryarchives.com/100-common-ocr-letter-misinterpretations/ disagrees but there's no date on that or reference to the specific processing being used, and to really know we'd have to test our own OCR reader. AI also broke down the number of Levenshtein steps from 4 to A as just 1 so we could tune when we want to use Levenshtein to address the problem if we wanted.
 - I'm actually getting more results now with the regex pattern substitution.
 
+### 14. Address too many results
+- If there is an exact match and the session is partial, return immediately instead of returning the full result set
+- This creates its own issue though as seen in `testSameCarTwiceWithinWindow()` where you can cheat the session by leaving and coming back before the session is over
+
 ### Outstanding Items
-- [ ] If there is an exact match, and it is partial, return just that (benefit of the doubt, ease), if there is not an exact match return all the results (prove fault, manual review)
+- [ ] Now not handling `testSameCarTwiceWithinWindow()` - need to collect open sessions, find the earliest one, and determine partial or full based on that
 - [ ] Timezone handling for datetime parameters in query (everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it)
-- [ ] `testSameCarTwiceWithinWindow()` illustrates someone trying to hack things by leaving and returning within the same  time frame; check each time_in against the previous in the loop, if it is less than the window duration, create an adjusted_time in that matches the original before evaluating the session completeness
