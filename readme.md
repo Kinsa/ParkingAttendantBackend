@@ -1,4 +1,10 @@
-_This project contains a means of tracking vehicle entries into a parking lot and assessing whether they have overstayed their session.
+# Parking Attendant
+
+This project contains a means of tracking vehicle entries into a parking lot and assessing whether they have overstayed their session.
+
+## Example Use Cases
+
+There are a series of use case scenarios which [are described and can be run in Postman](https://kinsacreative-9361599.postman.co/workspace/Kinsa-Creative's-Workspace~0b9e49cf-f915-49e3-833c-f71cae8edbe0/collection/49907170-7408272b-c732-468f-8f25-6613326e2065?action=share&creator=49907170). All that is required to access and run them is a free Postman account.
 
 ## API Documentation
 
@@ -112,10 +118,6 @@ curl "http://localhost:8000/api?vrm=AB12CDE&query_from=2024-11-13 10:00:00&query
 |  5 | MA10 JPJ | 2025-11-11 23:23:00 |
 +----+----------+---------------------+
 ```
-
-## Use Cases
-
-There are a series of use case scenarios which [are described and can be run in Postman](https://kinsacreative-9361599.postman.co/workspace/Kinsa-Creative's-Workspace~0b9e49cf-f915-49e3-833c-f71cae8edbe0/collection/49907170-7408272b-c732-468f-8f25-6613326e2065?action=share&creator=49907170).
 
 ## Development Database
 
