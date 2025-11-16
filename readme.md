@@ -1,4 +1,4 @@
-# Parking Attendant
+# Parking Attendant Backend
 
 This project demonstrates an API interface for querying vehicle entries into a parking lot and assessing whether they have overstayed their session.
 
