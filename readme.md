@@ -379,11 +379,13 @@ php bin/console doctrine:migrations:migrate
 - Return only latest session when VRM has an exact match and session is partial
 - AI assistance: Corrected SQL query syntax for proper parameter handling and result ordering  
 
+### 15. Refactoring for Use with Frontend (`88b6f2c`)
+- Set the endpoint route to `/api/v1/vehicle` rather than `/search` to allow a frontend to sit at `/`, to version the API for future use, and to make the name more generic to allow for `POST` as well as `GET` requests
+
 ### Outstanding Items / Questions
 - [ ] Pagination - probably not necessary with date parameters?
 - [ ] Ordering - API query to return responses purely by date?
 - [ ] OpenAPI documentation
-- [ ] Timezone handling for datetime parameters in query: Everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it.
+- [ ] Timezone handling for datetime parameters in query: everything currently works so long as all the dates use the same timezone as the system timezone - but that means converting the datetime before submitting it.
 - [ ] Should the session window be tracked via a specific datetime object instead of minutes? Minutes work well for a short-term lot. In terms of flexibility, in a long-term lot, someone might purchase a month at a time. It might be more straight forward to track that with an end date instead of minutes.
-- [ ] I noticed while out, that British custom plates aren't necessarily 8 characters. This didn't show up in my research into the format but might be factored into the query. Currently we are running Levenshtein if the match is less than 8 characters. The dataset should include some custom options.
-- [ ] What about non-UK plates? The database stores the plate number but do we need to do anything else? If we want to show a similarity score we need a maximum possible distance for the calculation which is typically defined as the length of the longer of the two strings (Similarity Score = (1 - Levenshtein Distance / Max Possible Distance) * 100%) - although this has been solved by choosing the longer string as the Max Possible Distance value (https://stackoverflow.com/a/21705117)
+- [ ] Custom / non-UK plate handling. Specific implications include that we are currently running Levenshtein if the match is less than 8 characters. The dataset should include some custom options.
