@@ -394,6 +394,9 @@ php bin/console doctrine:migrations:migrate
 - Added regex matching of the VRM itself
 - AI assistance: validated the VRM regex
 
+### 17. Account for Input without Spaces ([``]())
+- In revising the last, I began playing around with inputting without the space between the first 5 and last 2 characters. The solution I saw was to normalize the data in the database which would probably allow for quicker lookups. Remove the spaces and save the normalized VRM as a new column. AI suggested an alternative was adding optional spaces between all characters. I split the string into an array, and added the optional space parameter when imploding it.
+
 ### Outstanding Items / Questions
 - [ ] Raise an error if the VRM value contains anything other than A-Z, space, or 0-9 once capitalised
 - [ ] Pagination - probably not necessary with date parameters?

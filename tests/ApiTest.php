@@ -582,4 +582,33 @@ class ApiTest extends ApiTestCase
         $this->assertResponseStatusCodeSame(400);
         $this->assertJsonContains(['message' => 'Invalid VRM format. VRM must only contain letters and numbers. Spaces are allowed.']);
     }
+
+    /**
+     * VRM might be input without the space.
+     */
+    public function testVRMEnteredWithoutSpaces(): void
+    {
+        $vrm = 'MA06 GLO';
+        $tenMinutesAgo = new \DateTimeImmutable('-10 minutes');
+
+        $entityManager = self::getContainer()->get('doctrine')->getManager();
+        $vehicle = new Vehicle();
+        $vehicle->setVrm($vrm);
+        $vehicle->setTimeIn($tenMinutesAgo);
+
+        $entityManager->persist($vehicle);
+        $entityManager->flush();
+
+        static::createClient()->request('GET', $this->API_PATH, [
+            'query' => ['vrm' => str_replace(' ', '', $vrm)],
+        ]);
+        $this->assertJsonContains(['message' => '1 result found.']);
+        $this->assertJsonContains([
+            'results' => [
+                [
+                    'vrm' => $vrm,
+                ],
+            ],
+        ]);
+    }
 }

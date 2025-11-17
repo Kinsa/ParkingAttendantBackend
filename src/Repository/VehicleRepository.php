@@ -54,10 +54,11 @@ class VehicleRepository extends ServiceEntityRepository
     private function createFlexibleRegexPattern(string $vrm): string
     {
         // Convert to uppercase and normalize
-        $pattern = strtoupper($vrm);
+        $vrmUppercase = strtoupper($vrm);
 
-        // Replace spaces with optional space pattern
-        $pattern = str_replace(' ', '[ ]?', $pattern);
+        $spacelessPattern = str_replace(' ', '', $vrmUppercase);
+        $chars = str_split($spacelessPattern);
+        $pattern = implode('[ ]?', $chars);
 
         // Replace commonly confused OCR characters with character classes
         // Use a temporary placeholder to avoid replacing characters within the character classes
