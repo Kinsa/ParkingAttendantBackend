@@ -26,9 +26,9 @@ class VehicleRepository extends ServiceEntityRepository
      *  $pattern = 'AA[ ]?1234AB';  // [ ]? means "optional space"
      *
      *  Step 3: Replace confusable chars with PLACEHOLDERS first
-     *  // '1' → '___PLACEHOLDER_1___'
-     *  // 'B' → '___PLACEHOLDER_B___'
-     *  $pattern = 'AA[ ]?___PLACEHOLDER_1___234A___PLACEHOLDER_B___';
+     *  // '1' → '___1___'
+     *  // 'B' → '___B___'
+     *  $pattern = 'AA[ ]?___1___234A___B___';
      *
      *  Step 4: Replace placeholders with character classes
      *  // No risk of nested replacements now!
@@ -42,7 +42,7 @@ class VehicleRepository extends ServiceEntityRepository
      *  - [1I] = "match either 1 OR I" (one character)
      *  - [0OQ] = "match either 0 OR O OR Q"
      *  - [8B] = "match either 8 OR B"
-     *  - [ ]? = "optionally match a space" (the ? means 0 or 1 occurrences)
+     *  - [ ]? = "optionally match a space"
      *
      *  So the pattern ^AA[ ]?[1I]234A[8B]$ will match:
      *  - AA 1234AB ✓ (exact match)
