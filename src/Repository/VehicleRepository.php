@@ -107,10 +107,10 @@ class VehicleRepository extends ServiceEntityRepository
 
         $vrmPattern = $this->createFlexibleRegexPattern($vrm);
 
-        $query_from_str = $query_from ? $query_from->format('Y-m-d H:i:s') : '';
-        $query_to_str = $query_to->format('Y-m-d H:i:s');
+        $queryFromStr = $query_from ? $query_from->format('Y-m-d H:i:s') : '';
+        $queryToStr = $query_to->format('Y-m-d H:i:s');
 
-        $dateCondition = !empty($query_from_str) ? ' AND v.time_in BETWEEN :query_from AND :query_to' : 'AND v.time_in <= :query_to';
+        $dateCondition = !empty($queryFromStr) ? ' AND v.time_in BETWEEN :query_from AND :query_to' : 'AND v.time_in <= :query_to';
 
         $sql = <<<SQL
             SELECT DISTINCT * FROM (
@@ -133,11 +133,11 @@ class VehicleRepository extends ServiceEntityRepository
         $queryParameters = [
             'vrm' => $vrm,
             'vrmPattern' => $vrmPattern,
-            'query_to' => $query_to_str,
+            'query_to' => $queryToStr,
         ];
 
-        if (!empty($query_from_str)) {
-            $queryParameters['query_from'] = $query_from_str;
+        if (!empty($queryFromStr)) {
+            $queryParameters['query_from'] = $queryFromStr;
         }
 
         $resultSet = $conn->executeQuery($sql, $queryParameters);
