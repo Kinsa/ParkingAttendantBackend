@@ -131,7 +131,8 @@ Docker container running mariadb and phpMyAdmin.
 
 To start:
 
-```
+```bash
+#sh
 docker-compose up -d
 ```
 
@@ -142,20 +143,30 @@ Then open your browser to `http://localhost:8080` and log in with (defined in th
 
 To stop and remove the containers (preserving the data in the volume):
 
-```
+```bash
+#sh
 docker-compose down
 ```
 
 To remove the database:
 
-```
+```bash
+#sh
 docker-compose down -v
 ```
 
 To just stop (to restart later):
 
-```
+```bash
+#sh
 docker-compose stop
+```
+
+To resolve the issue `The container name "/mariadb_db" is already in use by container "...`, where Docker has a stopped container with that name, remove the container. The volume will persist:
+
+```bash
+#sh
+docker rm maria_db
 ```
 
 ## Symfony
