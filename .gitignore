@@ -8,6 +8,7 @@
 # DB Backups
 *.sql
 !init-db.sql
+!init-levenshtein.sql
 
 ###> symfony/framework-bundle ###
 /.env.local
